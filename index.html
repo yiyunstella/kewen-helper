@@ -1,0 +1,1669 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>课文小老师 MVP</title>
+  <style>
+    :root {
+      --ink: #1f2937;
+      --muted: #667085;
+      --line: #d6dde7;
+      --soft: #f5f7fa;
+      --paper: #ffffff;
+      --blue: #246b95;
+      --blue-dark: #174e70;
+      --green: #2d7a59;
+      --amber: #a86400;
+      --red: #b4475b;
+      --shadow: 0 10px 26px rgba(31, 41, 55, .1);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #eef3f6;
+      font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 248px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      background: #243447;
+      color: white;
+      padding: 22px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 8px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.16);
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: #f4c75f;
+      color: #243447;
+      font-weight: 800;
+      font-size: 21px;
+    }
+
+    .brand h1 {
+      margin: 0 0 3px;
+      font-size: 19px;
+      line-height: 1.1;
+    }
+
+    .brand p {
+      margin: 0;
+      color: #ccd6e2;
+      font-size: 12px;
+    }
+
+    .space-card {
+      background: rgba(255,255,255,.09);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 8px;
+      padding: 12px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .space-card label {
+      font-size: 12px;
+      color: #d8e2ec;
+    }
+
+    .space-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .space-card input,
+    .kid-select {
+      min-height: 38px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.12);
+      color: white;
+      padding: 0 10px;
+      min-width: 0;
+    }
+
+    .kid-select option {
+      color: var(--ink);
+    }
+
+    .mini-btn {
+      min-height: 38px;
+      border-radius: 8px;
+      padding: 0 10px;
+      color: #243447;
+      background: #f4c75f;
+      white-space: nowrap;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .nav button {
+      height: 43px;
+      border-radius: 8px;
+      background: transparent;
+      color: #dbe4ef;
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      align-items: center;
+      gap: 8px;
+      text-align: left;
+      padding: 0 12px;
+    }
+
+    .nav button.active,
+    .nav button:hover {
+      background: rgba(255,255,255,.12);
+      color: white;
+    }
+
+    .side-note {
+      margin-top: auto;
+      border-radius: 8px;
+      background: rgba(255,255,255,.1);
+      padding: 13px;
+      color: #dbe4ef;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .main {
+      padding: 24px;
+      min-width: 0;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .title h2 {
+      margin: 0 0 7px;
+      font-size: 26px;
+      line-height: 1.2;
+    }
+
+    .title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      min-height: 40px;
+      border-radius: 8px;
+      padding: 0 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--blue);
+      color: white;
+      white-space: nowrap;
+      box-shadow: 0 7px 16px rgba(36, 107, 149, .18);
+    }
+
+    .btn.secondary {
+      color: var(--ink);
+      background: white;
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    .btn.green { background: var(--green); }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .three {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 15px 17px;
+      background: #fbfcfd;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-head h3 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .panel-body {
+      padding: 17px;
+    }
+
+    .card {
+      min-height: 120px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: white;
+      padding: 15px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .card strong {
+      font-size: 16px;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .form {
+      display: grid;
+      gap: 13px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field label {
+      color: #475467;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      color: var(--ink);
+      padding: 10px 11px;
+    }
+
+    textarea {
+      min-height: 190px;
+      resize: vertical;
+      line-height: 1.65;
+    }
+
+    .upload-box {
+      border: 1px dashed #aab6c5;
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 12px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .upload-row {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .upload-label {
+      min-height: 38px;
+      border-radius: 8px;
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--blue);
+      color: white;
+      cursor: pointer;
+    }
+
+    .upload-label input {
+      display: none;
+    }
+
+    .upload-hint {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .file-list {
+      color: #344054;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .thumb-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+    }
+
+    .thumb {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      overflow: hidden;
+      display: grid;
+      gap: 8px;
+      padding-bottom: 10px;
+      cursor: grab;
+    }
+
+    .thumb.dragging {
+      opacity: .58;
+      border-color: var(--blue);
+    }
+
+    .thumb img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      background: #eef2f6;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .thumb-body {
+      padding: 0 9px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .thumb-name {
+      color: #344054;
+      font-size: 12px;
+      line-height: 1.35;
+      word-break: break-all;
+    }
+
+    .thumb-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .page-badge {
+      border-radius: 999px;
+      background: #e8f3ee;
+      color: var(--green);
+      border: 1px solid #cfe6da;
+      padding: 2px 7px;
+      font-size: 12px;
+    }
+
+    .tiny-btn {
+      min-height: 28px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: #f8fafc;
+      color: #344054;
+      padding: 0 8px;
+      font-size: 12px;
+    }
+
+    .tiny-btn.danger {
+      border-color: #f0c6ce;
+      background: #fff4f6;
+      color: var(--red);
+    }
+
+    .seg {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .seg button {
+      min-height: 38px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      color: var(--ink);
+      background: white;
+    }
+
+    .seg button.active {
+      color: white;
+      border-color: var(--blue);
+      background: var(--blue);
+    }
+
+    .toggle {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .toggle button {
+      min-height: 38px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--ink);
+    }
+
+    .toggle button.active {
+      border-color: var(--green);
+      color: white;
+      background: var(--green);
+    }
+
+    .preview {
+      background: white;
+      line-height: 2.15;
+      font-size: 17px;
+    }
+
+    .blank {
+      display: inline-block;
+      border-bottom: 1.8px solid #111827;
+      height: 1em;
+      vertical-align: baseline;
+      margin: 0 2px;
+    }
+
+    .blank.w1 { width: 3em; }
+    .blank.w2 { width: 6em; }
+    .blank.w3 { width: 9em; }
+    .blank.w4 { width: 12em; }
+
+    .question {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px;
+      margin-bottom: 11px;
+      background: #fff;
+      line-height: 1.7;
+    }
+
+    .tag {
+      display: inline-flex;
+      border-radius: 999px;
+      background: #e8f3ee;
+      color: var(--green);
+      border: 1px solid #cfe6da;
+      padding: 3px 8px;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .answers {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: #344054;
+      line-height: 1.8;
+    }
+
+    .records {
+      display: grid;
+      gap: 10px;
+    }
+
+    .record {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      padding: 13px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .record b {
+      font-size: 15px;
+    }
+
+    .record span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .empty {
+      border: 1px dashed #aeb8c6;
+      border-radius: 8px;
+      padding: 22px;
+      text-align: center;
+      color: var(--muted);
+      background: #fafbfc;
+    }
+
+    .toast {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      background: #243447;
+      color: white;
+      border-radius: 8px;
+      padding: 11px 13px;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: all .18s ease;
+      z-index: 5;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media print {
+      body { background: white; }
+      .sidebar, .topbar, .actions, .no-print { display: none !important; }
+      .app { display: block; }
+      .main { padding: 0; }
+      .panel { box-shadow: none; border: 0; }
+      .panel-head { border: 0; }
+    }
+
+    @media (max-width: 980px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { min-height: auto; }
+      .nav { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+      .nav button { grid-template-columns: 1fr; justify-items: center; font-size: 12px; padding: 0 6px; }
+      .side-note { display: none; }
+      .grid, .three { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 620px) {
+      .main { padding: 16px; }
+      .topbar { flex-direction: column; }
+      .actions { justify-content: flex-start; }
+      .title h2 { font-size: 22px; }
+      .space-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">文</div>
+        <div>
+          <h1>课文小老师</h1>
+          <p>纸面练习生成与反馈留档</p>
+        </div>
+      </div>
+
+      <div class="space-card">
+        <label for="spaceCode">家庭空间</label>
+        <div class="space-row">
+          <input id="spaceCode" placeholder="例如 YU2026">
+          <button class="mini-btn" id="useSpace">进入</button>
+        </div>
+        <button class="mini-btn" id="newSpace">创建空间</button>
+      </div>
+
+      <div class="space-card">
+        <label for="kidSelect">小朋友</label>
+        <select class="kid-select" id="kidSelect"></select>
+        <div class="space-row">
+          <input id="kidName" placeholder="输入姓名">
+          <button class="mini-btn" id="addKid">添加</button>
+        </div>
+      </div>
+
+      <div class="space-card">
+        <label for="lessonSelect">当前课文</label>
+        <select class="kid-select" id="lessonSelect"></select>
+        <div class="space-row">
+          <input id="newLessonTitle" placeholder="课文名">
+          <button class="mini-btn" id="addLesson">添加</button>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="主要功能">
+        <button class="active" data-screen="home"><span>1</span><span>首页</span></button>
+        <button data-screen="materials"><span>2</span><span>拍课文/习题</span></button>
+        <button data-screen="generate"><span>3</span><span>生成练习</span></button>
+        <button data-screen="feedback"><span>4</span><span>拍作答</span></button>
+        <button data-screen="archive"><span>5</span><span>留档</span></button>
+      </nav>
+
+      <div class="side-note">
+        当前版本先用浏览器模拟轻量云端数据层。接入真实后端时，家庭空间码和小朋友记录可以直接迁移。
+      </div>
+    </aside>
+
+    <main class="main">
+      <section id="home" class="screen active">
+        <div class="topbar">
+          <div class="title">
+            <h2>先选小朋友，再生成纸面练习</h2>
+            <p>首页只保留最常用入口：拍课文、拍习题、生成练习。</p>
+          </div>
+          <div class="actions">
+            <button class="btn" data-go="generate">生成练习</button>
+          </div>
+        </div>
+
+        <div class="three">
+          <div class="card">
+            <strong>1. 选择课文</strong>
+            <p>先创建或选择课文，后续素材、练习和反馈都挂在这篇课文下。</p>
+            <button class="btn secondary" data-go="materials">拍照/上传课文</button>
+          </div>
+          <div class="card">
+            <strong>2. 拍配套习题</strong>
+            <p>识别学校练习册题型，作为出题依据。</p>
+            <button class="btn secondary" data-go="materials">拍照/上传习题</button>
+          </div>
+          <div class="card">
+            <strong>3. 打印给孩子做</strong>
+            <p>导出学生版和答案版，孩子在线下纸面完成。</p>
+            <button class="btn secondary" data-go="archive">看留档</button>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="panel">
+            <div class="panel-head"><h3>当前空间</h3></div>
+            <div class="panel-body" id="spaceSummary"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>最近记录</h3></div>
+            <div class="panel-body records" id="recentRecords"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="materials" class="screen">
+        <div class="topbar">
+          <div class="title">
+            <h2>拍课文 / 配套习题</h2>
+            <p>先把多张图片归到同一篇课文或同一组习题，生成练习时再选择使用。</p>
+          </div>
+          <div class="actions">
+            <button class="btn" id="saveMaterial">保存素材</button>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="panel">
+            <div class="panel-head"><h3>新建素材</h3></div>
+            <div class="panel-body form">
+              <div class="field">
+                <label>归属课文</label>
+                <div class="question">
+                  <span class="tag">当前课文</span>
+                  <p id="materialLessonName">请先在左侧选择或创建课文</p>
+                </div>
+              </div>
+              <div class="field">
+                <label>素材类型</label>
+                <div class="toggle" id="materialTypePicker">
+                  <button class="active" data-material-type="lesson">课文</button>
+                  <button data-material-type="workbook">配套习题</button>
+                </div>
+              </div>
+              <div class="field">
+                <label>图片</label>
+                <div class="upload-box">
+                  <div class="upload-row">
+                    <label class="upload-label">
+                      拍照/上传多张图片
+                      <input id="materialImages" type="file" accept="image/*" capture="environment" multiple>
+                    </label>
+                    <button class="btn secondary" id="runOcr" type="button">一键 OCR</button>
+                    <span class="upload-hint">同一篇课文跨多页时，一次选择多张图；同一组配套习题也可以多张一起保存。</span>
+                  </div>
+                  <div class="file-list" id="materialImageList">尚未上传图片</div>
+                </div>
+              </div>
+              <div class="field">
+                <label for="materialText">识别文本 / 手动粘贴文本</label>
+                <textarea id="materialText" placeholder="上传图片后点击“一键 OCR”，识别结果会出现在这里；你也可以手动校对修改。"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head"><h3>已保存素材</h3></div>
+            <div class="panel-body records" id="materialRecords"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="generate" class="screen">
+        <div class="topbar">
+          <div class="title">
+            <h2>生成练习</h2>
+            <p>家长选择难度和拼音提示，系统输出可复制、可下载 Word 的纸面练习。</p>
+          </div>
+          <div class="actions">
+            <button class="btn secondary" id="copyPractice">复制学生版</button>
+            <button class="btn green" id="downloadWord">下载 Word</button>
+            <button class="btn" id="saveBatch">保存留档</button>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="panel">
+            <div class="panel-head"><h3>选择材料</h3></div>
+            <div class="panel-body form">
+              <div class="field">
+                <label>生成基于课文</label>
+                <div class="question">
+                  <span class="tag">当前课文</span>
+                  <p id="generateLessonName">请先在左侧选择或创建课文</p>
+                </div>
+              </div>
+              <div class="field">
+                <label for="lessonMaterialSelect">课文素材</label>
+                <select id="lessonMaterialSelect"></select>
+              </div>
+              <div class="field">
+                <label for="workbookMaterialSelect">配套习题素材</label>
+                <select id="workbookMaterialSelect"></select>
+              </div>
+              <button class="btn secondary" id="loadMaterials">载入所选素材</button>
+              <div class="field">
+                <label for="lessonTitle">课文标题</label>
+                <input id="lessonTitle" value="大禹治水">
+              </div>
+              <div class="field">
+                <label for="lessonText">课文原文</label>
+                <textarea id="lessonText"></textarea>
+              </div>
+              <div class="field">
+                <label for="workbookText">配套习题摘要</label>
+                <textarea id="workbookText"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head"><h3>生成设置</h3></div>
+            <div class="panel-body form">
+              <div class="field">
+                <label>练习类型</label>
+                <div class="toggle" id="modePicker">
+                  <button class="active" data-mode="blank">填空默写</button>
+                  <button data-mode="question">做题练习</button>
+                </div>
+              </div>
+              <div class="field" id="blankLevelField">
+                <label>难度</label>
+                <div class="seg" id="levelPicker">
+                  <button class="active" data-level="easy">轻度</button>
+                  <button data-level="medium">中度</button>
+                  <button data-level="hard">重度</button>
+                </div>
+              </div>
+              <div class="field" id="pinyinField">
+                <label>拼音提示</label>
+                <div class="toggle" id="pinyinPicker">
+                  <button class="active" data-pinyin="on">显示拼音</button>
+                  <button data-pinyin="off">不显示拼音</button>
+                </div>
+              </div>
+              <div class="question" id="questionHint" style="display:none">
+                <span class="tag">做题规则</span>
+                <p>做题练习不分轻度、中度、重度，系统只根据配套习题的题型生成同类型题。</p>
+              </div>
+              <button class="btn" id="generatePractice">生成预览</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h3>学生版预览</h3>
+            <button class="btn secondary no-print" onclick="window.print()">打印当前页</button>
+          </div>
+          <div class="panel-body preview" id="studentPreview"></div>
+        </div>
+
+        <div class="panel" style="margin-top:16px">
+          <div class="panel-head"><h3>答案版</h3></div>
+          <div class="panel-body" id="answerPreview"></div>
+        </div>
+      </section>
+
+      <section id="feedback" class="screen">
+        <div class="topbar">
+          <div class="title">
+            <h2>拍作答结果</h2>
+            <p>孩子在线下完成后，家长拍照上传，系统给家长反馈并沉淀错题。</p>
+          </div>
+          <div class="actions">
+            <button class="btn" id="saveFeedback">保存反馈</button>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="panel">
+            <div class="panel-head"><h3>作答输入</h3></div>
+            <div class="panel-body form">
+              <div class="field">
+                <label for="batchSelect">孩子做的是哪套练习</label>
+                <select id="batchSelect"></select>
+              </div>
+              <div class="field">
+                <label>孩子作答照片</label>
+                <div class="upload-box">
+                  <div class="upload-row">
+                    <label class="upload-label">
+                      拍照/上传作答
+                      <input id="answerImages" type="file" accept="image/*" capture="environment" multiple>
+                    </label>
+                    <span class="upload-hint">孩子做完纸面练习后上传，后续用于自动识别答案和批改。</span>
+                  </div>
+                  <div class="file-list" id="answerImageList">尚未上传作答图片</div>
+                </div>
+              </div>
+              <div class="field">
+                <label for="feedbackText">拍照识别结果或手动记录</label>
+                <textarea id="feedbackText" placeholder="例如：看拼音写词语中，孩子把“灾难”写成“灾南”；原因题只写“大禹很忙”，缺少“一心治水”。"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head"><h3>家长反馈预览</h3></div>
+            <div class="panel-body">
+              <div class="question">
+                <span class="tag">反馈给家长</span>
+                <p>系统会记录错题、错误原因和下一次复练建议。MVP 中这里先支持手动粘贴识别结果，后续接入图片识别和自动批改。</p>
+              </div>
+              <div class="question">
+                <span class="tag">复练建议</span>
+                <p>如果孩子字词书写错误，下次优先生成同词语的轻度填空；如果原因题不完整，下次先给“因为……所以……”句式支架。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="archive" class="screen">
+        <div class="topbar">
+          <div class="title">
+            <h2>留档</h2>
+            <p>按小朋友筛选，再查看课文、练习批次和反馈记录。</p>
+          </div>
+          <div class="actions">
+            <button class="btn secondary" id="exportJson">导出数据</button>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="panel">
+            <div class="panel-head"><h3>练习批次</h3></div>
+            <div class="panel-body records" id="batchRecords"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>反馈与错题</h3></div>
+            <div class="panel-body records" id="feedbackRecords"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast">已保存</div>
+
+  <script>
+    const demoLesson = `我国有这样一个传说。
+
+很久很久以前，洪水经常泛滥。大水淹没了田地，冲毁了房屋，毒蛇猛兽到处伤害人和牲畜。人们流离失所，过着痛苦的生活。
+
+洪水给百姓带来了无数的灾难，必须治好它。当时，一个名叫鲧的人领着大家治水。他筑坝挡水，结果洪水冲塌了堤坝，水灾反而更严重了。鲧花了九年时间治水，洪水仍然没有被治服，他的儿子禹继续治水。
+
+禹吸取了鲧失败的教训，采用疏导的办法治水。他不辞劳苦，跟成千上万的人一起，开山凿石，疏通了很多河道，让洪水通过河道，最后流到大海里去。
+
+禹离开家乡，一去就是十三年。据说，他一心治水，到处奔波，曾经多次路过自己家，都没有走进家门看一看。
+
+禹带着大家经过多年的努力，终于治服了洪水。毒蛇猛兽被驱赶走了，人们把家搬了回来。禹把粮食的种子发给人们，让大家在被水淹过的土地上耕种。他还带领大家修筑沟渠，用沟渠里的水浇田。农业生产渐渐恢复了，百姓安居乐业，重新过上了幸福的生活。
+
+人们感激禹治水的功绩，尊称他为“大禹”。`;
+
+    const demoWorkbook = `字音辨析：泛滥、灾难、淹没、疏导。
+看拼音写词语：洪水、必须、农业、继续。
+词语解释：流离失所、安居乐业。
+课文理解：比较鲧和禹的治水方法和结果。
+原因选择：大禹为什么多次路过家门而不入。
+故事复述：按灾难、鲧失败、禹成功、百姓幸福的顺序讲故事。`;
+
+    const blankWords = {
+      easy: [
+        ["传说", "chuán shuō"], ["洪水", "hóng shuǐ"], ["淹没", "yān mò"],
+        ["冲毁", "chōng huǐ"], ["灾难", "zāi nàn"], ["鲧", "gǔn"],
+        ["禹", "yǔ"], ["疏导", "shū dǎo"], ["河道", "hé dào"],
+        ["家乡", "jiā xiāng"], ["治服", "zhì fú"], ["恢复", "huī fù"],
+        ["幸福", "xìng fú"], ["功绩", "gōng jì"], ["大禹", "dà yǔ"]
+      ],
+      medium: [
+        ["传说", "chuán shuō"], ["洪水", "hóng shuǐ"], ["泛滥", "fàn làn"],
+        ["淹没", "yān mò"], ["冲毁", "chōng huǐ"], ["牲畜", "shēng chù"],
+        ["灾难", "zāi nàn"], ["筑坝", "zhù bà"], ["堤坝", "dī bà"],
+        ["教训", "jiào xùn"], ["疏导", "shū dǎo"], ["凿石", "záo shí"],
+        ["疏通", "shū tōng"], ["河道", "hé dào"], ["家乡", "jiā xiāng"],
+        ["奔波", "bēn bō"], ["治服", "zhì fú"], ["驱赶", "qū gǎn"],
+        ["恢复", "huī fù"], ["功绩", "gōng jì"]
+      ],
+      hard: [
+        ["传说", "chuán shuō"], ["洪水", "hóng shuǐ"], ["泛滥", "fàn làn"],
+        ["淹没", "yān mò"], ["冲毁", "chōng huǐ"], ["牲畜", "shēng chù"],
+        ["流离失所", "liú lí shī suǒ"], ["灾难", "zāi nàn"], ["筑坝", "zhù bà"],
+        ["堤坝", "dī bà"], ["治服", "zhì fú"], ["继续", "jì xù"],
+        ["教训", "jiào xùn"], ["疏导", "shū dǎo"], ["不辞劳苦", "bù cí láo kǔ"],
+        ["凿石", "záo shí"], ["疏通", "shū tōng"], ["河道", "hé dào"],
+        ["奔波", "bēn bō"], ["驱赶", "qū gǎn"], ["种子", "zhǒng zi"],
+        ["耕种", "gēng zhòng"], ["沟渠", "gōu qú"], ["浇田", "jiāo tián"],
+        ["安居乐业", "ān jū lè yè"], ["功绩", "gōng jì"]
+      ]
+    };
+
+    const stateKey = "kewen-mvp-state-v1";
+    let state = loadState();
+    let currentPractice = null;
+    const materialDrafts = {
+      lesson: { files: [], text: "" },
+      workbook: { files: [], text: "" }
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function loadState() {
+      const raw = localStorage.getItem(stateKey);
+      if (raw) return JSON.parse(raw);
+      const code = "SPACE-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+      return {
+        currentSpace: code,
+        spaces: {
+          [code]: { code, kids: [], lessons: [], materials: [], batches: [], feedback: [], createdAt: new Date().toISOString() }
+        }
+      };
+    }
+
+    function saveState() {
+      localStorage.setItem(stateKey, JSON.stringify(state));
+    }
+
+    function currentSpace() {
+      const space = state.spaces[state.currentSpace];
+      if (!space.lessons) space.lessons = [];
+      if (!space.materials) space.materials = [];
+      if (!space.batches) space.batches = [];
+      if (!space.feedback) space.feedback = [];
+      if (!space.kids) space.kids = [];
+      return space;
+    }
+
+    function currentKid() {
+      return $("kidSelect").value || "";
+    }
+
+    function currentLessonId() {
+      return $("lessonSelect").value || "";
+    }
+
+    function currentLesson() {
+      return currentSpace().lessons.find(item => item.id === currentLessonId());
+    }
+
+    function showToast(message) {
+      $("toast").textContent = message;
+      $("toast").classList.add("show");
+      setTimeout(() => $("toast").classList.remove("show"), 1500);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function go(id) {
+      document.querySelectorAll(".screen").forEach(item => item.classList.toggle("active", item.id === id));
+      document.querySelectorAll(".nav button").forEach(item => item.classList.toggle("active", item.dataset.screen === id));
+      render();
+    }
+
+    function render() {
+      const previousKid = $("kidSelect").value;
+      const previousLesson = $("lessonSelect").value;
+      $("spaceCode").value = state.currentSpace;
+      const space = currentSpace();
+      $("kidSelect").innerHTML = space.kids.length
+        ? space.kids.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("")
+        : `<option value="">请先添加小朋友</option>`;
+      if (previousKid && space.kids.includes(previousKid)) $("kidSelect").value = previousKid;
+      $("lessonSelect").innerHTML = space.lessons.length
+        ? space.lessons.map(item => `<option value="${item.id}">${escapeHtml(item.title)}</option>`).join("")
+        : `<option value="">请先添加课文</option>`;
+      if (previousLesson && space.lessons.some(item => item.id === previousLesson)) $("lessonSelect").value = previousLesson;
+
+      const kid = currentKid();
+      const lessonId = currentLessonId();
+      const lesson = currentLesson();
+      const batches = space.batches.filter(item => (!kid || item.kid === kid) && (!lessonId || item.lessonId === lessonId));
+      const feedback = space.feedback.filter(item => (!kid || item.kid === kid) && (!lessonId || item.lessonId === lessonId));
+      const lessonMaterials = space.materials.filter(item => item.type === "lesson" && (!lessonId || item.lessonId === lessonId));
+      const workbooks = space.materials.filter(item => item.type === "workbook" && (!lessonId || item.lessonId === lessonId));
+
+      $("spaceSummary").innerHTML = `
+        <div class="question">
+          <span class="tag">空间码</span>
+          <p>${escapeHtml(space.code)}</p>
+        </div>
+        <div class="question">
+          <span class="tag">小朋友</span>
+          <p>${space.kids.length ? space.kids.map(escapeHtml).join("、") : "还没有添加小朋友"}</p>
+        </div>
+        <div class="question">
+          <span class="tag">课文</span>
+          <p>${space.lessons.length ? space.lessons.map(item => escapeHtml(item.title)).join("、") : "还没有添加课文"}</p>
+        </div>
+      `;
+      if ($("materialLessonName")) $("materialLessonName").textContent = lesson ? lesson.title : "请先在左侧选择或创建课文";
+      if ($("generateLessonName")) $("generateLessonName").textContent = lesson ? lesson.title : "请先在左侧选择或创建课文";
+
+      renderRecordList("recentRecords", batches.slice(-3).reverse(), "还没有练习记录");
+      renderRecordList("batchRecords", batches.slice().reverse(), "还没有练习批次");
+      renderFeedbackList("feedbackRecords", feedback.slice().reverse());
+      renderMaterialList("materialRecords", space.materials.filter(item => !lessonId || item.lessonId === lessonId).slice().reverse());
+      $("lessonMaterialSelect").innerHTML = lessonMaterials.length
+        ? lessonMaterials.map(item => `<option value="${item.id}">${escapeHtml(item.title)}｜${item.files.length} 张图</option>`).join("")
+        : `<option value="">暂无课文素材</option>`;
+      $("workbookMaterialSelect").innerHTML = workbooks.length
+        ? workbooks.map(item => `<option value="${item.id}">${escapeHtml(item.title)}｜${item.files.length} 张图</option>`).join("")
+        : `<option value="">暂无习题素材</option>`;
+      $("batchSelect").innerHTML = batches.length
+        ? batches.slice().reverse().map(item => `<option value="${item.id}">${escapeHtml(item.title)}｜${escapeHtml(item.type)}｜${new Date(item.createdAt).toLocaleString()}</option>`).join("")
+        : `<option value="">暂无练习记录，请先生成并保存一套练习</option>`;
+    }
+
+    function renderRecordList(target, items, emptyText) {
+      $(target).innerHTML = items.length ? items.map(item => `
+        <div class="record">
+          <b>${escapeHtml(item.title)}｜${escapeHtml(item.type)}</b>
+          <span>小朋友：${escapeHtml(item.kid)}｜难度：${escapeHtml(item.level)}｜拼音：${escapeHtml(item.pinyin)}</span>
+          <span>${new Date(item.createdAt).toLocaleString()}</span>
+        </div>
+      `).join("") : `<div class="empty">${emptyText}</div>`;
+    }
+
+    function renderFeedbackList(target, items) {
+      $(target).innerHTML = items.length ? items.map(item => `
+        <div class="record">
+          <b>${escapeHtml(item.title || "作答反馈")}</b>
+          <span>小朋友：${escapeHtml(item.kid)}｜${new Date(item.createdAt).toLocaleString()}</span>
+          <span>${escapeHtml(item.text)}</span>
+        </div>
+      `).join("") : `<div class="empty">还没有反馈记录</div>`;
+    }
+
+    function renderMaterialList(target, items) {
+      $(target).innerHTML = items.length ? items.map(item => `
+        <div class="record">
+          <b>${escapeHtml(item.title)}｜${item.type === "lesson" ? "课文" : "配套习题"}</b>
+          <span>图片：${item.files.length ? item.files.map(escapeHtml).join("、") : "未记录图片"}</span>
+          <span>${new Date(item.createdAt).toLocaleString()}</span>
+        </div>
+      `).join("") : `<div class="empty">还没有保存素材</div>`;
+    }
+
+    function renderMaterialFiles() {
+      const draft = currentMaterialDraft();
+      const materialFiles = draft.files;
+      if (!materialFiles.length) {
+        $("materialImageList").innerHTML = "当前类型还没有上传图片";
+        return;
+      }
+      $("materialImageList").innerHTML = `
+        <div class="upload-hint">请确认页面顺序。默认按你选择的顺序排列，也可以手动调整。</div>
+        <div class="thumb-grid">
+          ${materialFiles.map((item, index) => `
+            <div class="thumb" draggable="true" data-file-drag="${index}">
+              <img src="${item.url}" alt="${escapeHtml(item.name)}">
+              <div class="thumb-body">
+                <div class="thumb-actions">
+                  <span class="page-badge">第 ${index + 1} 页</span>
+                  <button class="tiny-btn" data-file-up="${index}" ${index === 0 ? "disabled" : ""}>上移</button>
+                  <button class="tiny-btn" data-file-down="${index}" ${index === materialFiles.length - 1 ? "disabled" : ""}>下移</button>
+                  <button class="tiny-btn danger" data-file-remove="${index}">删除</button>
+                </div>
+                <div class="thumb-name">${escapeHtml(item.name)}</div>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+      document.querySelectorAll("[data-file-up]").forEach(button => {
+        button.addEventListener("click", () => moveMaterialFile(Number(button.dataset.fileUp), -1));
+      });
+      document.querySelectorAll("[data-file-down]").forEach(button => {
+        button.addEventListener("click", () => moveMaterialFile(Number(button.dataset.fileDown), 1));
+      });
+      document.querySelectorAll("[data-file-remove]").forEach(button => {
+        button.addEventListener("click", () => removeMaterialFile(Number(button.dataset.fileRemove)));
+      });
+      document.querySelectorAll("[data-file-drag]").forEach(card => {
+        card.addEventListener("dragstart", (event) => {
+          card.classList.add("dragging");
+          event.dataTransfer.setData("text/plain", card.dataset.fileDrag);
+        });
+        card.addEventListener("dragend", () => card.classList.remove("dragging"));
+        card.addEventListener("dragover", (event) => event.preventDefault());
+        card.addEventListener("drop", (event) => {
+          event.preventDefault();
+          const from = Number(event.dataTransfer.getData("text/plain"));
+          const to = Number(card.dataset.fileDrag);
+          moveMaterialFileTo(from, to);
+        });
+      });
+    }
+
+    function moveMaterialFile(index, direction) {
+      const materialFiles = currentMaterialDraft().files;
+      const next = index + direction;
+      if (next < 0 || next >= materialFiles.length) return;
+      moveMaterialFileTo(index, next);
+    }
+
+    function moveMaterialFileTo(index, next) {
+      const draft = currentMaterialDraft();
+      const materialFiles = draft.files;
+      if (index === next || index < 0 || next < 0 || index >= materialFiles.length || next >= materialFiles.length) return;
+      const copy = materialFiles.slice();
+      const [item] = copy.splice(index, 1);
+      copy.splice(next, 0, item);
+      draft.files = copy;
+      renderMaterialFiles();
+    }
+
+    function removeMaterialFile(index) {
+      const draft = currentMaterialDraft();
+      const item = draft.files[index];
+      if (item) URL.revokeObjectURL(item.url);
+      draft.files = draft.files.filter((_, itemIndex) => itemIndex !== index);
+      renderMaterialFiles();
+    }
+
+    function selected(selector, attr) {
+      return document.querySelector(`${selector} .active`).dataset[attr];
+    }
+
+    function currentMaterialType() {
+      return selected("#materialTypePicker", "materialType");
+    }
+
+    function currentMaterialDraft() {
+      return materialDrafts[currentMaterialType()];
+    }
+
+    function syncMaterialDraftFromText() {
+      currentMaterialDraft().text = $("materialText").value;
+    }
+
+    function switchMaterialType(typeButton) {
+      syncMaterialDraftFromText();
+      document.querySelectorAll("#materialTypePicker button").forEach(item => item.classList.remove("active"));
+      typeButton.classList.add("active");
+      const draft = currentMaterialDraft();
+      $("materialText").value = draft.text;
+      renderMaterialFiles();
+    }
+
+    function makeBlank(word, pinyin, showPinyin) {
+      const len = Math.min(Math.max(word.length, 1), 4);
+      const blank = `<span class="blank w${len}"></span>`;
+      return showPinyin ? `${blank}（${pinyin}）` : blank;
+    }
+
+    function generateBlankPractice() {
+      const level = selected("#levelPicker", "level");
+      const showPinyin = selected("#pinyinPicker", "pinyin") === "on";
+      let html = escapeHtml($("lessonText").value || demoLesson);
+      const answers = [];
+
+      blankWords[level].forEach(([word, pinyin]) => {
+        const safe = escapeHtml(word);
+        if (html.includes(safe)) {
+          html = html.replace(safe, makeBlank(word, pinyin, showPinyin));
+          answers.push(word);
+        }
+      });
+
+      return {
+        studentHtml: `<h2>《${escapeHtml($("lessonTitle").value)}》填空默写</h2><p>${html.replaceAll("\n", "</p><p>")}</p>`,
+        answerHtml: `<h3>答案</h3><p>${answers.map(escapeHtml).join("、")}</p>`,
+        studentText: htmlToText(html),
+        answers
+      };
+    }
+
+    function generateQuestions() {
+      const questionSets = buildSimilarQuestions();
+      const rows = questionSets.map((item, index) => `
+        <div class="question">
+          <span class="tag">${item[0]}</span>
+          <p>${index + 1}. ${item[1]}</p>
+        </div>
+      `).join("");
+      return {
+        studentHtml: `<h2>《${escapeHtml($("lessonTitle").value)}》做题练习</h2>${rows}`,
+        answerHtml: `<h3>答案</h3>${questionSets.map((item, index) => `<p>${index + 1}. ${escapeHtml(item[2])}</p>`).join("")}`,
+        studentText: questionSets.map((item, index) => `${index + 1}. ${item[1]}`).join("\n"),
+        answers: questionSets.map(item => item[2])
+      };
+    }
+
+    function buildSimilarQuestions() {
+      const workbookText = $("workbookText").value || "";
+      const questions = [];
+
+      if (workbookText.includes("根据意思") || workbookText.includes("词语解释") || workbookText.includes("流离失所") || workbookText.includes("安居乐业")) {
+        questions.push(["根据意思找词语", "大水漫过、盖过田地或房屋，对应课文中的哪个词语？", "淹没"]);
+        questions.push(["根据意思找词语", "用水冲坏、冲倒，对应课文中的哪个词语？", "冲毁"]);
+        questions.push(["根据意思找词语", "不怕辛苦，对应课文中的哪个词语？", "不辞劳苦"]);
+        questions.push(["根据意思找词语", "安定地生活，愉快地劳动，对应课文中的哪个词语？", "安居乐业"]);
+      }
+
+      if (workbookText.includes("看拼音") || workbookText.includes("hóng") || workbookText.includes("shū")) {
+        questions.push(["看拼音写词语", "______（hóng shuǐ）  ______（zāi nàn）  ______（shū dǎo）  ______（huī fù）", "洪水、灾难、疏导、恢复"]);
+      }
+
+      if (workbookText.includes("表格") || workbookText.includes("治水方法") || workbookText.includes("治水结果")) {
+        questions.push(["表格梳理", "请填写：鲧的治水方法是______，结果是______；禹的治水方法是______，结果是______。", "筑坝挡水、失败；疏导、成功"]);
+      }
+
+      if (workbookText.includes("原因") || workbookText.includes("路过自己家")) {
+        questions.push(["原因说明", "大禹为什么多次路过自己家，都没有走进家门看一看？", "因为大禹一心治水，顾不上回家。"]);
+      }
+
+      if (workbookText.includes("讲一讲") || workbookText.includes("故事") || workbookText.includes("提示")) {
+        questions.push(["故事复述", "按照“洪水带来灾难 → 鲧治水失败 → 禹疏导治水 → 百姓恢复生活”的顺序，讲一讲大禹治水的故事。", "按提示说清四个环节即可。"]);
+      }
+
+      if (workbookText.includes("不辞劳苦") || workbookText.includes("身边")) {
+        questions.push(["仿说表达", "照样子说一说：我身边的____不辞劳苦，他/她____。", "句子通顺，有具体人物和事情即可。"]);
+      }
+
+      if (!questions.length) {
+        questions.push(["根据意思找词语", "不怕辛苦，对应课文中的哪个词语？", "不辞劳苦"]);
+        questions.push(["根据意思找词语", "安定地生活，愉快地劳动，对应课文中的哪个词语？", "安居乐业"]);
+        questions.push(["原因说明", "大禹为什么能治服洪水？", "他吸取教训，采用疏导的办法，并且不辞劳苦。"]);
+      }
+
+      return questions.slice(0, 8);
+    }
+
+    function htmlToText(html) {
+      return html
+        .replaceAll(/<span class="blank w(\d)"><\/span>/g, (_, n) => "_".repeat(Number(n) * 3))
+        .replaceAll(/<[^>]+>/g, "")
+        .replaceAll("&amp;", "&")
+        .replaceAll("&lt;", "<")
+        .replaceAll("&gt;", ">");
+    }
+
+    function generatePractice() {
+      const mode = selected("#modePicker", "mode");
+      currentPractice = mode === "blank" ? generateBlankPractice() : generateQuestions();
+      $("studentPreview").innerHTML = currentPractice.studentHtml;
+      $("answerPreview").innerHTML = currentPractice.answerHtml;
+      showToast("练习已生成");
+    }
+
+    function updateModeControls() {
+      const mode = selected("#modePicker", "mode");
+      const isQuestion = mode === "question";
+      $("blankLevelField").style.display = isQuestion ? "none" : "grid";
+      $("pinyinField").style.display = isQuestion ? "none" : "grid";
+      $("questionHint").style.display = isQuestion ? "block" : "none";
+    }
+
+    async function copyPractice() {
+      if (!currentPractice) generatePractice();
+      await navigator.clipboard.writeText(currentPractice.studentText);
+      showToast("学生版已复制");
+    }
+
+    function downloadWord() {
+      if (!currentPractice) generatePractice();
+      const title = $("lessonTitle").value || "课文练习";
+      const content = `
+        <!doctype html>
+        <html><head><meta charset="utf-8">
+        <style>
+          body { font-family: "Microsoft YaHei", Arial, sans-serif; line-height: 2; font-size: 14pt; }
+          h2 { text-align: center; }
+          .blank { display: inline-block; border-bottom: 1.5pt solid #111; height: 1em; vertical-align: baseline; }
+          .w1 { width: 3em; } .w2 { width: 6em; } .w3 { width: 9em; } .w4 { width: 12em; }
+          .answer { page-break-before: always; }
+        </style></head><body>
+          ${currentPractice.studentHtml}
+          <div class="answer">${currentPractice.answerHtml}</div>
+        </body></html>`;
+      const blob = new Blob(["\ufeff", content], { type: "application/msword" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${title}-练习.doc`;
+      link.click();
+      URL.revokeObjectURL(url);
+      showToast("Word 已下载");
+    }
+
+    function saveBatch() {
+      if (!currentPractice) generatePractice();
+      const kid = currentKid();
+      if (!kid) return showToast("请先添加小朋友");
+      const lesson = currentLesson();
+      if (!lesson) return showToast("请先创建或选择课文");
+      const space = currentSpace();
+      const batch = {
+        id: crypto.randomUUID(),
+        kid,
+        lessonId: lesson.id,
+        lessonTitle: lesson.title,
+        title: $("lessonTitle").value || "未命名课文",
+        type: selected("#modePicker", "mode") === "blank" ? "填空默写" : "做题练习",
+        level: selected("#modePicker", "mode") === "blank" ? document.querySelector("#levelPicker .active").textContent : "按配套习题同类型",
+        pinyin: selected("#modePicker", "mode") === "blank" ? document.querySelector("#pinyinPicker .active").textContent : "不适用",
+        lessonText: $("lessonText").value,
+        workbookText: $("workbookText").value,
+        studentHtml: currentPractice.studentHtml,
+        answerHtml: currentPractice.answerHtml,
+        createdAt: new Date().toISOString()
+      };
+      space.batches.push(batch);
+      saveState();
+      render();
+      showToast("已保存到留档");
+    }
+
+    function saveMaterial() {
+      syncMaterialDraftFromText();
+      const lesson = currentLesson();
+      if (!lesson) return showToast("请先创建或选择课文");
+      const materialType = selected("#materialTypePicker", "materialType");
+      const title = `${lesson.title}${materialType === "lesson" ? "课文图片" : "配套习题"}`;
+      const draft = currentMaterialDraft();
+      const text = draft.text.trim();
+      const files = draft.files.map(file => file.name);
+      if (!text && !files.length) return showToast("请上传图片或填写识别文本");
+      const material = {
+        id: crypto.randomUUID(),
+        lessonId: lesson.id,
+        lessonTitle: lesson.title,
+        type: materialType,
+        title,
+        text,
+        files,
+        createdAt: new Date().toISOString()
+      };
+      currentSpace().materials.push(material);
+      saveState();
+      $("materialImages").value = "";
+      draft.files.forEach(file => URL.revokeObjectURL(file.url));
+      draft.files = [];
+      draft.text = "";
+      renderMaterialFiles();
+      $("materialText").value = "";
+      render();
+      showToast("素材已保存");
+    }
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function runOcr() {
+      const draft = currentMaterialDraft();
+      if (!draft.files.length) return showToast("请先上传图片");
+      const button = $("runOcr");
+      const oldText = button.textContent;
+      button.textContent = "识别中...";
+      button.disabled = true;
+      try {
+        const images = [];
+        for (const item of draft.files) {
+          images.push({
+            name: item.name,
+            dataUrl: await fileToDataUrl(item.file)
+          });
+        }
+        const response = await fetch("http://localhost:8787/api/ocr", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            materialType: currentMaterialType(),
+            images
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "OCR 失败");
+        draft.text = data.text || "";
+        $("materialText").value = draft.text;
+        showToast("OCR 识别完成");
+      } catch (error) {
+        showToast(error.message.includes("Failed to fetch") ? "请先启动本地服务" : error.message);
+      } finally {
+        button.textContent = oldText;
+        button.disabled = false;
+      }
+    }
+
+    function loadSelectedMaterials() {
+      const space = currentSpace();
+      const lesson = space.materials.find(item => item.id === $("lessonMaterialSelect").value);
+      const workbook = space.materials.find(item => item.id === $("workbookMaterialSelect").value);
+      if (lesson) {
+        $("lessonTitle").value = lesson.title;
+        $("lessonText").value = lesson.text || demoLesson;
+      }
+      if (workbook) {
+        $("workbookText").value = workbook.text || demoWorkbook;
+      }
+      if (!lesson && !workbook) return showToast("请先保存课文或习题素材");
+      currentPractice = null;
+      showToast("素材已载入");
+    }
+
+    function saveFeedback() {
+      const kid = currentKid();
+      if (!kid) return showToast("请先添加小朋友");
+      const lesson = currentLesson();
+      if (!lesson) return showToast("请先创建或选择课文");
+      const text = $("feedbackText").value.trim();
+      if (!text) return showToast("请填写作答结果");
+      const batchId = $("batchSelect").value;
+      const batch = currentSpace().batches.find(item => item.id === batchId);
+      currentSpace().feedback.push({
+        id: crypto.randomUUID(),
+        batchId,
+        kid,
+        lessonId: lesson.id,
+        lessonTitle: lesson.title,
+        title: batch ? batch.title : "作答反馈",
+        text,
+        createdAt: new Date().toISOString()
+      });
+      $("feedbackText").value = "";
+      saveState();
+      render();
+      showToast("反馈已保存");
+    }
+
+    function addKid() {
+      const name = $("kidName").value.trim();
+      if (!name) return showToast("请输入小朋友姓名");
+      const space = currentSpace();
+      if (!space.kids.includes(name)) space.kids.push(name);
+      $("kidName").value = "";
+      saveState();
+      render();
+      $("kidSelect").value = name;
+      showToast("小朋友已添加");
+    }
+
+    function addLesson() {
+      const title = $("newLessonTitle").value.trim();
+      if (!title) return showToast("请输入课文名");
+      const space = currentSpace();
+      let lesson = space.lessons.find(item => item.title === title);
+      if (!lesson) {
+        lesson = { id: crypto.randomUUID(), title, createdAt: new Date().toISOString() };
+        space.lessons.push(lesson);
+      }
+      $("newLessonTitle").value = "";
+      saveState();
+      render();
+      $("lessonSelect").value = lesson.id;
+      $("lessonTitle").value = title;
+      showToast("课文已选择");
+    }
+
+    function useSpace() {
+      const code = $("spaceCode").value.trim();
+      if (!code) return showToast("请输入空间码");
+      if (!state.spaces[code]) {
+        state.spaces[code] = { code, kids: [], lessons: [], materials: [], batches: [], feedback: [], createdAt: new Date().toISOString() };
+      }
+      state.currentSpace = code;
+      saveState();
+      render();
+      showToast("已进入家庭空间");
+    }
+
+    function newSpace() {
+      const code = "SPACE-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+      state.spaces[code] = { code, kids: [], lessons: [], materials: [], batches: [], feedback: [], createdAt: new Date().toISOString() };
+      state.currentSpace = code;
+      saveState();
+      render();
+      showToast("新空间已创建");
+    }
+
+    function exportJson() {
+      const blob = new Blob([JSON.stringify(currentSpace(), null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${state.currentSpace}-学习留档.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function bindImageInput(inputId, listId, targetTextId, label) {
+      $(inputId).addEventListener("change", (event) => {
+        const files = [...event.target.files];
+        if (!files.length) {
+          $(listId).textContent = `尚未上传${label}图片`;
+          return;
+        }
+        if (inputId === "materialImages") {
+          const nextFiles = files.map(file => ({
+            file,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            url: URL.createObjectURL(file)
+          }));
+          const draft = currentMaterialDraft();
+          draft.files = draft.files.concat(nextFiles);
+          renderMaterialFiles();
+          const target = $(targetTextId);
+          draft.text = target.value;
+          event.target.value = "";
+          showToast(`${label}图片已选择`);
+          return;
+        }
+        $(listId).innerHTML = files.map(file => `已选择：${escapeHtml(file.name)}`).join("<br>");
+        const target = $(targetTextId);
+        const note = `\n\n[已上传${label}图片：${files.map(file => file.name).join("、")}]\n[当前 MVP 先保留文本校对区；接入 OCR 后这里会自动填入识别结果。]`;
+        if (!target.value.includes(`[已上传${label}图片：`)) {
+          target.value = `${target.value.trim()}${note}`;
+        }
+        showToast(`${label}图片已选择`);
+      });
+    }
+
+    document.querySelectorAll("[data-screen]").forEach(button => button.addEventListener("click", () => go(button.dataset.screen)));
+    document.querySelectorAll("[data-go]").forEach(button => button.addEventListener("click", () => go(button.dataset.go)));
+    document.querySelectorAll("#modePicker button").forEach(button => button.addEventListener("click", () => {
+      document.querySelectorAll("#modePicker button").forEach(item => item.classList.remove("active"));
+      button.classList.add("active");
+      updateModeControls();
+    }));
+    document.querySelectorAll("#levelPicker button").forEach(button => button.addEventListener("click", () => {
+      document.querySelectorAll("#levelPicker button").forEach(item => item.classList.remove("active"));
+      button.classList.add("active");
+    }));
+    document.querySelectorAll("#pinyinPicker button").forEach(button => button.addEventListener("click", () => {
+      document.querySelectorAll("#pinyinPicker button").forEach(item => item.classList.remove("active"));
+      button.classList.add("active");
+    }));
+    document.querySelectorAll("#materialTypePicker button").forEach(button => {
+      button.addEventListener("click", () => switchMaterialType(button));
+    });
+
+    $("lessonText").value = demoLesson;
+    $("materialText").value = "";
+    $("workbookText").value = demoWorkbook;
+    $("useSpace").addEventListener("click", useSpace);
+    $("newSpace").addEventListener("click", newSpace);
+    $("addKid").addEventListener("click", addKid);
+    $("addLesson").addEventListener("click", addLesson);
+    $("lessonSelect").addEventListener("change", () => {
+      const lesson = currentLesson();
+      if (lesson) {
+        $("lessonTitle").value = lesson.title;
+      }
+      render();
+    });
+    $("saveMaterial").addEventListener("click", saveMaterial);
+    $("runOcr").addEventListener("click", runOcr);
+    $("materialText").addEventListener("input", syncMaterialDraftFromText);
+    $("loadMaterials").addEventListener("click", loadSelectedMaterials);
+    $("generatePractice").addEventListener("click", generatePractice);
+    $("copyPractice").addEventListener("click", copyPractice);
+    $("downloadWord").addEventListener("click", downloadWord);
+    $("saveBatch").addEventListener("click", saveBatch);
+    $("saveFeedback").addEventListener("click", saveFeedback);
+    $("exportJson").addEventListener("click", exportJson);
+    bindImageInput("materialImages", "materialImageList", "materialText", "素材");
+    bindImageInput("answerImages", "answerImageList", "feedbackText", "作答");
+
+    render();
+    updateModeControls();
+    generatePractice();
+  </script>
+</body>
+</html>
