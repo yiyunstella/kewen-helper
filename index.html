@@ -1234,28 +1234,119 @@
       renderMaterialFiles();
     }
 
+    const pinyinMap = {
+      "雷雨": "léi yǔ", "乌云": "wū yún", "黑沉沉": "hēi chén chén", "树上": "shù shàng",
+      "叶子": "yè zi", "一动不动": "yí dòng bú dòng", "蝉": "chán", "大风": "dà fēng",
+      "树枝": "shù zhī", "乱摆": "luàn bǎi", "蜘蛛": "zhī zhū", "垂下来": "chuí xià lai",
+      "逃走": "táo zǒu", "闪电": "shǎn diàn", "越来越亮": "yuè lái yuè liàng",
+      "雷声": "léi shēng", "越来越响": "yuè lái yuè xiǎng", "哗哗哗": "huā huā huā",
+      "窗外": "chuāng wài", "房子": "fáng zi", "窗户": "chuāng hu", "清新": "qīng xīn",
+      "迎面扑来": "yíng miàn pū lái", "彩虹": "cǎi hóng", "天空": "tiān kōng",
+      "池塘": "chí táng", "青蛙": "qīng wā", "渐渐地": "jiàn jiàn de",
+      "传说": "chuán shuō", "洪水": "hóng shuǐ", "泛滥": "fàn làn", "淹没": "yān mò",
+      "冲毁": "chōng huǐ", "灾难": "zāi nàn", "教训": "jiào xùn", "疏导": "shū dǎo",
+      "河道": "hé dào", "治水": "zhì shuǐ", "恢复": "huī fù", "功绩": "gōng jì",
+      "安居乐业": "ān jū lè yè", "不辞劳苦": "bù cí láo kǔ", "牲畜": "shēng chù",
+      "流离失所": "liú lí shī suǒ", "筑坝": "zhù bà", "堤坝": "dī bà",
+      "凿石": "záo shí", "疏通": "shū tōng", "家乡": "jiā xiāng",
+      "奔波": "bēn bō", "驱赶": "qū gǎn", "种子": "zhǒng zi",
+      "耕种": "gēng zhòng", "沟渠": "gōu qú", "浇田": "jiāo tián",
+      "继续": "jì xù", "治服": "zhì fú", "幸福": "xìng fú", "大禹": "dà yǔ"
+    };
+
+    function pickBlankWordsFromText(text, level) {
+      const normalized = text.replace(/\s+/g, "");
+      const candidates = [];
+      Object.keys(pinyinMap)
+        .sort((a, b) => b.length - a.length)
+        .forEach(word => {
+          if (normalized.includes(word) && !candidates.includes(word)) candidates.push(word);
+        });
+
+      if (candidates.length < 4) {
+        const matches = normalized.match(/[\u4e00-\u9fa5]{2,4}/g) || [];
+        matches.forEach(word => {
+          if (word.length >= 2 && word.length <= 4 && !candidates.includes(word)) candidates.push(word);
+        });
+      }
+
+      const limit = level === "easy" ? 6 : level === "medium" ? 10 : 16;
+      return candidates.slice(0, limit);
+    }
+
     function makeBlank(word, pinyin, showPinyin) {
       const len = Math.min(Math.max(word.length, 1), 4);
       const blank = `<span class="blank w${len}"></span>`;
-      return showPinyin ? `${blank}（${pinyin}）` : blank;
+      const inner = showPinyin && pinyin ? `${blank}（${escapeHtml(pinyin)}）` : blank;
+      // 用 cloze 包一层，让 Word 把“横线+拼音”当作整体，避免行末截断
+      return `<span class="cloze">${inner}</span>`;
     }
 
-    function generateBlankPractice() {
-      const level = selected("#levelPicker", "level");
-      const showPinyin = selected("#pinyinPicker", "pinyin") === "on";
-      let html = escapeHtml($("lessonText").value || demoLesson);
+    function renderBlankPractice(sourceText, blanks, showPinyin) {
+      let html = escapeHtml(sourceText);
       const answers = [];
-
-      blankWords[level].forEach(([word, pinyin]) => {
+      blanks.forEach(item => {
+        const word = item.word;
+        if (!word) return;
         const safe = escapeHtml(word);
         if (html.includes(safe)) {
-          html = html.replace(safe, makeBlank(word, pinyin, showPinyin));
+          html = html.replace(safe, makeBlank(word, item.pinyin || pinyinMap[word] || "", showPinyin));
           answers.push(word);
         }
       });
-
       return {
-        studentHtml: `<h2>《${escapeHtml($("lessonTitle").value)}》填空默写</h2><p>${html.replaceAll("\n", "</p><p>")}</p>`,
+        studentHtml: `<h2>\u300a${escapeHtml($("lessonTitle").value || "\u8bfe\u6587")}\u300b\u586b\u7a7a\u7ec3\u4e60</h2><p>${html.replaceAll("\n", "</p><p>")}</p>`,
+        answerHtml: `<h3>\u7b54\u6848</h3><p>${answers.map(escapeHtml).join("\u3001")}</p>`,
+        studentText: htmlToText(html),
+        answers
+      };
+    }
+
+    function localBlankFallback(sourceText, level, showPinyin) {
+      const words = pickBlankWordsFromText(sourceText, level)
+        .map(word => ({ word, pinyin: pinyinMap[word] || "" }));
+      return renderBlankPractice(sourceText, words, showPinyin);
+    }
+
+    async function generateBlankPractice() {
+      const level = selected("#levelPicker", "level");
+      const showPinyin = selected("#pinyinPicker", "pinyin") === "on";
+      const sourceText = $("lessonText").value || demoLesson;
+      const lessonTitle = $("lessonTitle").value || "";
+
+      try {
+        const response = await fetch("/api/practice", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lessonTitle, lessonText: sourceText, level, showPinyin })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "\u7ec3\u4e60\u751f\u6210\u5931\u8d25");
+        const blanks = Array.isArray(data.blanks) ? data.blanks : [];
+        if (!blanks.length) return localBlankFallback(sourceText, level, showPinyin);
+        return renderBlankPractice(sourceText, blanks, showPinyin);
+      } catch (error) {
+        showToast("\u5927\u6a21\u578b\u751f\u6210\u5931\u8d25\uff0c\u5df2\u56de\u9000\u672c\u5730\u8bcd\u8868\uff1a" + error.message);
+        return localBlankFallback(sourceText, level, showPinyin);
+      }
+    }
+
+    function _legacyGenerateBlankPractice_unused() {
+      const level = selected("#levelPicker", "level");
+      const showPinyin = selected("#pinyinPicker", "pinyin") === "on";
+      const sourceText = $("lessonText").value || demoLesson;
+      let html = escapeHtml(sourceText);
+      const answers = [];
+      const words = pickBlankWordsFromText(sourceText, level);
+      words.forEach(word => {
+        const safe = escapeHtml(word);
+        if (html.includes(safe)) {
+          html = html.replace(safe, makeBlank(word, pinyinMap[word], showPinyin));
+          answers.push(word);
+        }
+      });
+      return {
+        studentHtml: `<h2>《${escapeHtml($("lessonTitle").value || "课文")}》填空练习</h2><p>${html.replaceAll("\n", "</p><p>")}</p>`,
         answerHtml: `<h3>答案</h3><p>${answers.map(escapeHtml).join("、")}</p>`,
         studentText: htmlToText(html),
         answers
@@ -1327,9 +1418,10 @@
         .replaceAll("&gt;", ">");
     }
 
-    function generatePractice() {
+    async function generatePractice() {
       const mode = selected("#modePicker", "mode");
-      currentPractice = mode === "blank" ? generateBlankPractice() : generateQuestions();
+      showToast(mode === "blank" ? "正在生成填空练习…" : "正在生成做题练习…");
+      currentPractice = mode === "blank" ? await generateBlankPractice() : generateQuestions();
       $("studentPreview").innerHTML = currentPractice.studentHtml;
       $("answerPreview").innerHTML = currentPractice.answerHtml;
       showToast("练习已生成");
@@ -1344,26 +1436,36 @@
     }
 
     async function copyPractice() {
-      if (!currentPractice) generatePractice();
+      if (!currentPractice) await generatePractice();
       await navigator.clipboard.writeText(currentPractice.studentText);
       showToast("学生版已复制");
     }
 
-    function downloadWord() {
-      if (!currentPractice) generatePractice();
+    async function downloadWord() {
+      if (!currentPractice) await generatePractice();
       const title = $("lessonTitle").value || "课文练习";
+      // Word 里用 <u>+全角空格作为横线，外面 cloze 已经包了 white-space:nowrap，行末横线会整体换到下一行
+      const blankFor = (n) => `<u>${"　".repeat(Number(n) * 2)}</u>`;
+      const toWordHtml = (html) => html.replace(
+        /<span class="blank w(\d)"><\/span>/g,
+        (_, n) => blankFor(n)
+      );
+      const studentHtml = toWordHtml(currentPractice.studentHtml);
+      const answerHtml = toWordHtml(currentPractice.answerHtml);
       const content = `
         <!doctype html>
         <html><head><meta charset="utf-8">
         <style>
-          body { font-family: "Microsoft YaHei", Arial, sans-serif; line-height: 2; font-size: 14pt; }
-          h2 { text-align: center; }
-          .blank { display: inline-block; border-bottom: 1.5pt solid #111; height: 1em; vertical-align: baseline; }
-          .w1 { width: 3em; } .w2 { width: 6em; } .w3 { width: 9em; } .w4 { width: 12em; }
-          .answer { page-break-before: always; }
+          body { font-family: "Microsoft YaHei", Arial, sans-serif; line-height: 1.5; font-size: 13pt; margin: 0; }
+          h2 { text-align: center; margin: 6pt 0 10pt; font-size: 16pt; }
+          h3 { margin: 8pt 0 4pt; font-size: 14pt; }
+          p { margin: 4pt 0; }
+          u { text-underline-position: under; }
+          .cloze { white-space: nowrap; }
+          .answer { margin-top: 12pt; }
         </style></head><body>
-          ${currentPractice.studentHtml}
-          <div class="answer">${currentPractice.answerHtml}</div>
+          ${studentHtml}
+          <div class="answer">${answerHtml}</div>
         </body></html>`;
       const blob = new Blob(["\ufeff", content], { type: "application/msword" });
       const url = URL.createObjectURL(blob);
@@ -1375,8 +1477,8 @@
       showToast("Word 已下载");
     }
 
-    function saveBatch() {
-      if (!currentPractice) generatePractice();
+    async function saveBatch() {
+      if (!currentPractice) await generatePractice();
       const kid = currentKid();
       if (!kid) return showToast("请先添加小朋友");
       const lesson = currentLesson();
@@ -1459,7 +1561,7 @@
             dataUrl: await fileToDataUrl(item.file)
           });
         }
-        const response = await fetch("http://localhost:8787/api/ocr", {
+        const response = await fetch("/api/ocr", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1494,6 +1596,25 @@
       if (!lesson && !workbook) return showToast("请先保存课文或习题素材");
       currentPractice = null;
       showToast("素材已载入");
+    }
+
+    function syncLessonInputs() {
+      const space = currentSpace();
+      const lesson = currentLesson();
+      if (!lesson) {
+        $("lessonText").value = "";
+        $("workbookText").value = "";
+        currentPractice = null;
+        return;
+      }
+      $("lessonTitle").value = lesson.title;
+      const lessonMats = space.materials.filter(item => item.type === "lesson" && item.lessonId === lesson.id);
+      const workbookMats = space.materials.filter(item => item.type === "workbook" && item.lessonId === lesson.id);
+      const latestLesson = lessonMats.slice().sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))[0];
+      const latestWorkbook = workbookMats.slice().sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))[0];
+      $("lessonText").value = latestLesson ? (latestLesson.text || "") : "";
+      $("workbookText").value = latestWorkbook ? (latestWorkbook.text || "") : "";
+      currentPractice = null;
     }
 
     function saveFeedback() {
@@ -1646,6 +1767,7 @@
       if (lesson) {
         $("lessonTitle").value = lesson.title;
       }
+      syncLessonInputs();
       render();
     });
     $("saveMaterial").addEventListener("click", saveMaterial);
