@@ -98,11 +98,30 @@
       color: #d8e2ec;
     }
 
+    .space-card .sub-label {
+      font-size: 11px;
+      color: #aab8c6;
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(255,255,255,.12);
+    }
+
     .space-row {
       display: grid;
       grid-template-columns: 1fr auto;
       gap: 8px;
     }
+    .space-row.two-col { grid-template-columns: 1fr 1fr; }
+    .space-row select {
+      min-height: 38px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.12);
+      color: white;
+      padding: 0 10px;
+      min-width: 0;
+    }
+    .space-row select option { color: var(--ink); }
 
     .space-card input,
     .kid-select {
@@ -573,6 +592,23 @@
     }
 
 
+
+    .lesson-admin { display: flex; flex-direction: column; gap: 8px; }
+    .lesson-admin-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 10px 12px; border: 1px solid var(--border);
+      border-radius: 8px; background: white;
+    }
+    .lesson-admin-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .lesson-admin-title { font-weight: 600; }
+    .lesson-admin-meta { color: var(--muted); font-size: 12px; }
+    .lesson-admin-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .lesson-admin-actions button {
+      border: 1px solid var(--border); background: white; color: var(--text);
+      border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px;
+    }
+    .lesson-admin-actions button:hover { background: #f3f4f6; }
+
     .grade-toolbar {
       display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
       padding: 10px 12px; background: #f7f9fc; border: 1px solid var(--border);
@@ -671,11 +707,26 @@
       </div>
 
       <div class="space-card">
-        <label for="lessonSelect">当前课文</label>
+        <label for="gradeFilter">筛选范围</label>
+        <select class="kid-select" id="gradeFilter">
+          <option value="">全部年级｜全部学期</option>
+        </select>
+        <label for="lessonSelect" class="sub-label">当前课文</label>
         <select class="kid-select" id="lessonSelect"></select>
+        <label class="sub-label">添加新课文</label>
         <div class="space-row">
           <input id="newLessonTitle" placeholder="课文名">
           <button class="mini-btn" id="addLesson">添加</button>
+        </div>
+        <div class="space-row two-col">
+          <select id="newLessonGrade">
+            <option value="">未分类年级</option>
+          </select>
+          <select id="newLessonTerm">
+            <option value="">未分类学期</option>
+            <option value="上册">上册</option>
+            <option value="下册">下册</option>
+          </select>
         </div>
       </div>
 
@@ -919,11 +970,21 @@
             <p>按小朋友筛选，再查看课文、练习批次、薄弱字词与反馈。</p>
           </div>
           <div class="actions">
+            <button class="btn secondary" id="importJson">导入数据</button>
             <button class="btn secondary" id="exportJson">导出数据</button>
+            <input type="file" id="importJsonFile" accept=".json,application/json" style="display:none">
           </div>
         </div>
 
         <div class="panel">
+          <div class="panel-head"><h3>课文管理</h3></div>
+          <div class="panel-body">
+            <div class="weak-toolbar"><span>修改课文名、调整年级/学期，或删除整篇课文（同时清除其下的素材、练习、反馈）。</span></div>
+            <div id="lessonAdmin"></div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:16px">
           <div class="panel-head"><h3>薄弱词｜<span id="weakKidLabel">未选小朋友</span></h3></div>
           <div class="panel-body">
             <div class="weak-toolbar"><span>批改后错误的词会自动进入薄弱词库；连续答对 3 次自动出库。</span></div>
@@ -1061,6 +1122,15 @@
       $("toast").textContent = message;
       $("toast").classList.add("show");
       setTimeout(() => $("toast").classList.remove("show"), 1500);
+    }
+
+    const GRADE_OPTIONS = ["一年级", "二年级", "三年级", "四年级", "五年级", "六年级"];
+    const TERM_OPTIONS = ["上册", "下册"];
+    function gradeOrder(g) { const i = GRADE_OPTIONS.indexOf(g); return i === -1 ? 99 : i; }
+    function termOrder(t) { const i = TERM_OPTIONS.indexOf(t); return i === -1 ? 99 : i; }
+    function lessonGroupKey(lesson) {
+      if (!lesson || !lesson.grade) return "未分类";
+      return lesson.grade + (lesson.term ? `·${lesson.term}` : "");
     }
 
     const MASTERY_STREAK = 3;
@@ -1332,10 +1402,60 @@
         ? space.kids.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("")
         : `<option value="">请先添加小朋友</option>`;
       if (previousKid && space.kids.includes(previousKid)) $("kidSelect").value = previousKid;
-      $("lessonSelect").innerHTML = space.lessons.length
-        ? space.lessons.map(item => `<option value="${item.id}">${escapeHtml(item.title)}</option>`).join("")
-        : `<option value="">请先添加课文</option>`;
-      if (previousLesson && space.lessons.some(item => item.id === previousLesson)) $("lessonSelect").value = previousLesson;
+      // 渲染年级筛选下拉
+      const gradeFilter = $("gradeFilter");
+      const previousFilter = gradeFilter.value;
+      const filterOptions = [`<option value="">全部年级｜全部学期</option>`];
+      GRADE_OPTIONS.forEach(g => {
+        TERM_OPTIONS.forEach(t => {
+          filterOptions.push(`<option value="${g}|${t}">${g}·${t}</option>`);
+        });
+      });
+      filterOptions.push(`<option value="未分类">未分类</option>`);
+      gradeFilter.innerHTML = filterOptions.join("");
+      if (previousFilter && [...gradeFilter.options].some(o => o.value === previousFilter)) gradeFilter.value = previousFilter;
+
+      // 添加新课文的年级下拉
+      const newGradeSel = $("newLessonGrade");
+      if (newGradeSel && newGradeSel.options.length <= 1) {
+        const opts = [`<option value="">未分类年级</option>`];
+        GRADE_OPTIONS.forEach(g => opts.push(`<option value="${g}">${g}</option>`));
+        newGradeSel.innerHTML = opts.join("");
+      }
+
+      // 按筛选过滤课文，再按年级·学期分组渲染
+      const activeFilter = gradeFilter.value;
+      const filteredLessons = space.lessons.filter(item => {
+        if (!activeFilter) return true;
+        if (activeFilter === "未分类") return !item.grade;
+        const [g, t] = activeFilter.split("|");
+        return item.grade === g && item.term === t;
+      });
+      const sortedLessons = filteredLessons.slice().sort((a, b) => {
+        const ag = gradeOrder(a.grade), bg = gradeOrder(b.grade);
+        if (ag !== bg) return ag - bg;
+        const at = termOrder(a.term), bt = termOrder(b.term);
+        if (at !== bt) return at - bt;
+        return String(a.title).localeCompare(String(b.title));
+      });
+      const groups = new Map();
+      sortedLessons.forEach(item => {
+        const key = lessonGroupKey(item);
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(item);
+      });
+      let lessonHtml = "";
+      if (!sortedLessons.length) {
+        lessonHtml = activeFilter ? `<option value="">该筛选下暂无课文</option>` : `<option value="">请先添加课文</option>`;
+      } else {
+        groups.forEach((items, label) => {
+          lessonHtml += `<optgroup label="${escapeHtml(label)}">`;
+          items.forEach(item => { lessonHtml += `<option value="${item.id}">${escapeHtml(item.title)}</option>`; });
+          lessonHtml += `</optgroup>`;
+        });
+      }
+      $("lessonSelect").innerHTML = lessonHtml;
+      if (previousLesson && filteredLessons.some(item => item.id === previousLesson)) $("lessonSelect").value = previousLesson;
 
       const kid = currentKid();
       const lessonId = currentLessonId();
@@ -1380,6 +1500,7 @@
       syncBatchSelect();
       renderWeakWords();
       renderWeakChars();
+      renderLessonAdmin();
 
       // lesson-switch sync: refresh material textareas exactly once when lesson changes
       if (lastSyncedLessonId !== lessonId) {
@@ -1974,18 +2095,147 @@
     function addLesson() {
       const title = $("newLessonTitle").value.trim();
       if (!title) return showToast("请输入课文名");
+      const grade = ($("newLessonGrade") && $("newLessonGrade").value) || "";
+      const term = ($("newLessonTerm") && $("newLessonTerm").value) || "";
       const space = currentSpace();
-      let lesson = space.lessons.find(item => item.title === title);
+      let lesson = space.lessons.find(item => item.title === title && (item.grade || "") === grade && (item.term || "") === term);
       if (!lesson) {
-        lesson = { id: crypto.randomUUID(), title, createdAt: new Date().toISOString() };
+        lesson = { id: crypto.randomUUID(), title, grade, term, createdAt: new Date().toISOString() };
         space.lessons.push(lesson);
+      } else {
+        if (grade) lesson.grade = grade;
+        if (term) lesson.term = term;
       }
       $("newLessonTitle").value = "";
       saveState();
       render();
       $("lessonSelect").value = lesson.id;
-      $("lessonTitle").value = title;
+      if ($("lessonTitle")) $("lessonTitle").value = title;
       showToast("课文已选择");
+    }
+
+    function renderLessonAdmin() {
+      const target = $("lessonAdmin");
+      if (!target) return;
+      const space = currentSpace();
+      if (!space.lessons.length) {
+        target.innerHTML = `<div class="empty">还没有课文。可以在左侧添加。</div>`;
+        return;
+      }
+      const sorted = space.lessons.slice().sort((a, b) => {
+        const ag = gradeOrder(a.grade), bg = gradeOrder(b.grade);
+        if (ag !== bg) return ag - bg;
+        const at = termOrder(a.term), bt = termOrder(b.term);
+        if (at !== bt) return at - bt;
+        return String(a.title).localeCompare(String(b.title));
+      });
+      target.innerHTML = `<div class="lesson-admin">${sorted.map(lesson => {
+        const tag = lesson.grade ? `${escapeHtml(lesson.grade)}${lesson.term ? "·" + escapeHtml(lesson.term) : ""}` : "未分类";
+        const matCount = space.materials.filter(m => m.lessonId === lesson.id).length;
+        const batchCount = space.batches.filter(b => b.lessonId === lesson.id).length;
+        const fbCount = space.feedback.filter(f => f.lessonId === lesson.id).length;
+        return `<div class="lesson-admin-row">
+          <div class="lesson-admin-info">
+            <div class="lesson-admin-title">${escapeHtml(lesson.title)}</div>
+            <div class="lesson-admin-meta">${tag}｜素材 ${matCount} · 练习 ${batchCount} · 反馈 ${fbCount}</div>
+          </div>
+          <div class="lesson-admin-actions">
+            <button data-action="lesson-edit" data-id="${lesson.id}">编辑</button>
+            <button data-action="lesson-delete" data-id="${lesson.id}">删除</button>
+          </div>
+        </div>`;
+      }).join("")}</div>`;
+    }
+
+    function editLesson(lessonId) {
+      const space = currentSpace();
+      const lesson = space.lessons.find(l => l.id === lessonId);
+      if (!lesson) return;
+      const newTitle = prompt("课文名", lesson.title);
+      if (newTitle === null) return;
+      const trimmed = newTitle.trim();
+      if (!trimmed) return showToast("课文名不能为空");
+      const gradeChoices = ["未分类年级", ...GRADE_OPTIONS];
+      const gradeMsg = "年级（输入数字，0=未分类年级）：\n" + gradeChoices.map((g, i) => `${i}. ${g}`).join("\n");
+      const currentGradeIdx = lesson.grade ? GRADE_OPTIONS.indexOf(lesson.grade) + 1 : 0;
+      const gradeInput = prompt(gradeMsg, String(currentGradeIdx));
+      if (gradeInput === null) return;
+      const gIdx = Number(gradeInput);
+      const grade = (gIdx > 0 && gIdx <= GRADE_OPTIONS.length) ? GRADE_OPTIONS[gIdx - 1] : "";
+      const termChoices = ["未分类学期", ...TERM_OPTIONS];
+      const termMsg = "学期（输入数字，0=未分类学期）：\n" + termChoices.map((t, i) => `${i}. ${t}`).join("\n");
+      const currentTermIdx = lesson.term ? TERM_OPTIONS.indexOf(lesson.term) + 1 : 0;
+      const termInput = prompt(termMsg, String(currentTermIdx));
+      if (termInput === null) return;
+      const tIdx = Number(termInput);
+      const term = (tIdx > 0 && tIdx <= TERM_OPTIONS.length) ? TERM_OPTIONS[tIdx - 1] : "";
+      lesson.title = trimmed;
+      lesson.grade = grade;
+      lesson.term = term;
+      space.batches.forEach(b => { if (b.lessonId === lessonId) b.lessonTitle = trimmed; });
+      space.feedback.forEach(f => { if (f.lessonId === lessonId) f.lessonTitle = trimmed; });
+      saveState();
+      render();
+      showToast("课文已更新");
+    }
+
+    function deleteLesson(lessonId) {
+      const space = currentSpace();
+      const lesson = space.lessons.find(l => l.id === lessonId);
+      if (!lesson) return;
+      const matCount = space.materials.filter(m => m.lessonId === lessonId).length;
+      const batchCount = space.batches.filter(b => b.lessonId === lessonId).length;
+      const fbCount = space.feedback.filter(f => f.lessonId === lessonId).length;
+      const ok = confirm(`确认删除课文「${lesson.title}」？\n会一并清除：素材 ${matCount} 条、练习 ${batchCount} 条、反馈 ${fbCount} 条。\n该小朋友的薄弱字词不会受影响。`);
+      if (!ok) return;
+      space.lessons = space.lessons.filter(l => l.id !== lessonId);
+      space.materials = space.materials.filter(m => m.lessonId !== lessonId);
+      space.batches = space.batches.filter(b => b.lessonId !== lessonId);
+      space.feedback = space.feedback.filter(f => f.lessonId !== lessonId);
+      saveState();
+      render();
+      showToast("课文已删除");
+    }
+
+    function importJson() {
+      const input = $("importJsonFile");
+      if (!input) return;
+      input.value = "";
+      input.click();
+    }
+
+    function handleImportFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(String(reader.result || ""));
+          if (!data || typeof data !== "object" || !data.code) {
+            showToast("文件不是有效的空间导出 JSON");
+            return;
+          }
+          const ok = confirm(`将用文件中的空间「${data.code}」覆盖当前空间「${state.currentSpace}」的全部数据。是否继续？`);
+          if (!ok) return;
+          const incoming = {
+            code: state.currentSpace,
+            kids: Array.isArray(data.kids) ? data.kids : [],
+            lessons: Array.isArray(data.lessons) ? data.lessons : [],
+            materials: Array.isArray(data.materials) ? data.materials : [],
+            batches: Array.isArray(data.batches) ? data.batches : [],
+            feedback: Array.isArray(data.feedback) ? data.feedback : [],
+            weakWords: (data.weakWords && typeof data.weakWords === "object") ? data.weakWords : {},
+            weakChars: (data.weakChars && typeof data.weakChars === "object") ? data.weakChars : {},
+            createdAt: data.createdAt || new Date().toISOString()
+          };
+          state.spaces[state.currentSpace] = incoming;
+          saveState();
+          render();
+          showToast("已导入");
+        } catch (err) {
+          showToast("导入失败：" + (err.message || err));
+        }
+      };
+      reader.readAsText(file, "utf-8");
     }
 
     function useSpace() {
@@ -2079,6 +2329,20 @@
     $("newSpace").addEventListener("click", newSpace);
     $("addKid").addEventListener("click", addKid);
     $("addLesson").addEventListener("click", addLesson);
+    $("gradeFilter").addEventListener("change", () => render());
+    $("lessonAdmin").addEventListener("click", (event) => {
+      const btn = event.target.closest("button[data-action]");
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const action = btn.dataset.action;
+      if (action === "lesson-edit") editLesson(id);
+      else if (action === "lesson-delete") deleteLesson(id);
+    });
+    $("importJson").addEventListener("click", importJson);
+    $("importJsonFile").addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      handleImportFile(file);
+    });
     $("lessonSelect").addEventListener("change", () => {
       const lesson = currentLesson();
       if (lesson) {
