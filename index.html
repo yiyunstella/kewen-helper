@@ -572,6 +572,48 @@
       transform: translateY(0);
     }
 
+
+    .grade-toolbar {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+      padding: 10px 12px; background: #f7f9fc; border: 1px solid var(--border);
+      border-radius: 8px; margin-bottom: 12px;
+    }
+    .grade-toolbar select { flex: 1 1 220px; min-width: 200px; }
+    .grade-toolbar .grade-meta { color: var(--muted); font-size: 13px; flex: 1 1 100%; }
+    .grade-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+    .grade-item {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; padding: 8px 10px; border: 1px solid var(--border);
+      border-radius: 8px; background: white;
+    }
+    .grade-item.right { background: #ecfdf5; border-color: #6ee7b7; }
+    .grade-item.wrong { background: #fef2f2; border-color: #fca5a5; }
+    .grade-word { display: flex; flex-direction: column; gap: 2px; }
+    .grade-word span { font-weight: 600; }
+    .grade-pinyin { font-weight: 400 !important; color: var(--muted); font-size: 12px; }
+    .grade-actions { display: flex; gap: 4px; }
+    .grade-actions button {
+      border: 1px solid var(--border); background: white; color: var(--text);
+      border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 13px;
+    }
+    .grade-actions button:hover { background: #f3f4f6; }
+    .grade-item.right .grade-actions button[data-grade="right"] { background: #10b981; color: white; border-color: #10b981; }
+    .grade-item.wrong .grade-actions button[data-grade="wrong"] { background: #ef4444; color: white; border-color: #ef4444; }
+    .weak-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 12px; color: var(--muted); font-size: 13px; }
+    .weak-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+    .weak-card { border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: white; display: flex; flex-direction: column; gap: 6px; }
+    .weak-card.mastered { background: #f3f4f6; opacity: 0.75; }
+    .weak-head { display: flex; align-items: baseline; gap: 8px; }
+    .weak-word { font-size: 18px; font-weight: 700; }
+    .weak-pinyin { color: var(--muted); font-size: 12px; }
+    .weak-meta { color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .weak-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .weak-actions button {
+      border: 1px solid var(--border); background: white; color: var(--text);
+      border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px;
+    }
+    .weak-actions button:hover { background: #f3f4f6; }
+
     @media print {
       body { background: white; }
       .sidebar, .topbar, .actions, .no-print { display: none !important; }
@@ -848,54 +890,24 @@
       <section id="feedback" class="screen">
         <div class="topbar">
           <div class="title">
-            <h2>拍作答结果</h2>
-            <p>孩子在线下完成后，家长拍照上传，系统给家长反馈并沉淀错题。</p>
+            <h2>批改作答</h2>
+            <p>选一套已保存的练习，只勾错的就够了——其余默认视为对。错的会自动进入这个小朋友的薄弱字词库。</p>
           </div>
           <div class="actions">
-            <button class="btn" id="saveFeedback">保存反馈</button>
+            <button class="btn secondary" id="gradeAllRight">全部勾对</button>
+            <button class="btn secondary" id="gradeAllWrong">全部勾错</button>
+            <button class="btn" id="saveFeedback">保存批改</button>
           </div>
         </div>
 
-        <div class="grid">
-          <div class="panel">
-            <div class="panel-head"><h3>作答输入</h3></div>
-            <div class="panel-body form">
-              <div class="field">
-                <label for="batchSelect">孩子做的是哪套练习</label>
-                <select id="batchSelect"></select>
-              </div>
-              <div class="field">
-                <label>孩子作答照片</label>
-                <div class="upload-box">
-                  <div class="upload-row">
-                    <label class="upload-label">
-                      拍照/上传作答
-                      <input id="answerImages" type="file" accept="image/*" capture="environment" multiple>
-                    </label>
-                    <span class="upload-hint">孩子做完纸面练习后上传，后续用于自动识别答案和批改。</span>
-                  </div>
-                  <div class="file-list" id="answerImageList">尚未上传作答图片</div>
-                </div>
-              </div>
-              <div class="field">
-                <label for="feedbackText">拍照识别结果或手动记录</label>
-                <textarea id="feedbackText" placeholder="例如：看拼音写词语中，孩子把“灾难”写成“灾南”；原因题只写“大禹很忙”，缺少“一心治水”。"></textarea>
-              </div>
+        <div class="panel">
+          <div class="panel-head"><h3>选择练习</h3></div>
+          <div class="panel-body">
+            <div class="grade-toolbar">
+              <select id="batchSelect"></select>
+              <div class="grade-meta" id="gradeMeta"></div>
             </div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-head"><h3>家长反馈预览</h3></div>
-            <div class="panel-body">
-              <div class="question">
-                <span class="tag">反馈给家长</span>
-                <p>系统会记录错题、错误原因和下一次复练建议。MVP 中这里先支持手动粘贴识别结果，后续接入图片识别和自动批改。</p>
-              </div>
-              <div class="question">
-                <span class="tag">复练建议</span>
-                <p>如果孩子字词书写错误，下次优先生成同词语的轻度填空；如果原因题不完整，下次先给“因为……所以……”句式支架。</p>
-              </div>
-            </div>
+            <div id="gradeList" class="grade-list"></div>
           </div>
         </div>
       </section>
@@ -904,14 +916,30 @@
         <div class="topbar">
           <div class="title">
             <h2>留档</h2>
-            <p>按小朋友筛选，再查看课文、练习批次和反馈记录。</p>
+            <p>按小朋友筛选，再查看课文、练习批次、薄弱字词与反馈。</p>
           </div>
           <div class="actions">
             <button class="btn secondary" id="exportJson">导出数据</button>
           </div>
         </div>
 
-        <div class="grid">
+        <div class="panel">
+          <div class="panel-head"><h3>薄弱词｜<span id="weakKidLabel">未选小朋友</span></h3></div>
+          <div class="panel-body">
+            <div class="weak-toolbar"><span>批改后错误的词会自动进入薄弱词库；连续答对 3 次自动出库。</span></div>
+            <div id="weakWordsPanel"></div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:16px">
+          <div class="panel-head"><h3>薄弱字｜<span id="weakKidLabel2">未选小朋友</span></h3></div>
+          <div class="panel-body">
+            <div class="weak-toolbar"><span>批改错词时会按字拆出来累积；连续答对 3 次该字自动出库。</span></div>
+            <div id="weakCharsPanel"></div>
+          </div>
+        </div>
+
+        <div class="grid" style="margin-top:16px">
           <div class="panel">
             <div class="panel-head"><h3>练习批次</h3></div>
             <div class="panel-body records" id="batchRecords"></div>
@@ -1012,6 +1040,8 @@
       if (!space.batches) space.batches = [];
       if (!space.feedback) space.feedback = [];
       if (!space.kids) space.kids = [];
+      if (!space.weakWords) space.weakWords = {};
+      if (!space.weakChars) space.weakChars = {};
       return space;
     }
 
@@ -1031,6 +1061,251 @@
       $("toast").textContent = message;
       $("toast").classList.add("show");
       setTimeout(() => $("toast").classList.remove("show"), 1500);
+    }
+
+    const MASTERY_STREAK = 3;
+
+    function ensureKidWeakWords(kid) {
+      const space = currentSpace();
+      if (!space.weakWords[kid]) space.weakWords[kid] = [];
+      return space.weakWords[kid];
+    }
+
+    function ensureKidWeakChars(kid) {
+      const space = currentSpace();
+      if (!space.weakChars[kid]) space.weakChars[kid] = [];
+      return space.weakChars[kid];
+    }
+
+    function activeWeakWords(kid) {
+      return ensureKidWeakWords(kid).filter(item => !item.mastered);
+    }
+
+    function activeWeakChars(kid) {
+      return ensureKidWeakChars(kid).filter(item => !item.mastered);
+    }
+
+    function priorityWordsFromText(lessonText, weakChars) {
+      if (!lessonText || !weakChars || !weakChars.length) return [];
+      const charSet = new Set(weakChars);
+      const matches = lessonText.match(/[\u4e00-\u9fff]{2,4}/g) || [];
+      const seen = new Set();
+      const result = [];
+      matches.forEach(word => {
+        if (seen.has(word)) return;
+        if (![...word].some(ch => charSet.has(ch))) return;
+        seen.add(word);
+        result.push(word);
+      });
+      return result;
+    }
+
+    function recordWeakWords(kid, batch, marks) {
+      const stat = { wordAdded: 0, wordUpdated: 0, wordMastered: 0, charAdded: 0, charUpdated: 0, charMastered: 0 };
+      if (!kid || !batch || !Array.isArray(batch.blanks)) return stat;
+      const wordList = ensureKidWeakWords(kid);
+      const charList = ensureKidWeakChars(kid);
+      const lessonTitle = batch.lessonTitle || batch.title || "";
+      const now = new Date().toISOString();
+      batch.blanks.forEach(item => {
+        const word = item && item.word;
+        if (!word) return;
+        // 默认行为：没勾选 = 视为对（降低操作成本，只标错就够）
+        const rawMark = marks[word];
+        const mark = rawMark === "wrong" ? "wrong" : "right";
+        let wEntry = wordList.find(e => e.word === word);
+        if (mark === "wrong") {
+          if (!wEntry) {
+            wEntry = { word, pinyin: item.pinyin || "", errorCount: 0, correctStreak: 0, mastered: false, firstLessonTitle: lessonTitle, firstSeenAt: now, lastErrorAt: now };
+            wordList.push(wEntry);
+            stat.wordAdded += 1;
+          } else {
+            stat.wordUpdated += 1;
+          }
+          wEntry.errorCount = (wEntry.errorCount || 0) + 1;
+          wEntry.correctStreak = 0;
+          wEntry.mastered = false;
+          wEntry.masteredAt = null;
+          wEntry.lastErrorAt = now;
+          if (item.pinyin && !wEntry.pinyin) wEntry.pinyin = item.pinyin;
+        } else if (wEntry) {
+          wEntry.correctStreak = (wEntry.correctStreak || 0) + 1;
+          wEntry.lastRightAt = now;
+          if (!wEntry.mastered && wEntry.correctStreak >= MASTERY_STREAK) {
+            wEntry.mastered = true;
+            wEntry.masteredAt = now;
+            stat.wordMastered += 1;
+          }
+          stat.wordUpdated += 1;
+        }
+        const chars = [...word].filter(ch => /[\u4e00-\u9fff]/.test(ch));
+        chars.forEach(ch => {
+          let cEntry = charList.find(e => e.char === ch);
+          if (mark === "wrong") {
+            if (!cEntry) {
+              cEntry = { char: ch, errorCount: 0, correctStreak: 0, mastered: false, firstWord: word, firstLessonTitle: lessonTitle, firstSeenAt: now, lastErrorAt: now };
+              charList.push(cEntry);
+              stat.charAdded += 1;
+            } else {
+              stat.charUpdated += 1;
+            }
+            cEntry.errorCount = (cEntry.errorCount || 0) + 1;
+            cEntry.correctStreak = 0;
+            cEntry.mastered = false;
+            cEntry.masteredAt = null;
+            cEntry.lastErrorAt = now;
+          } else if (cEntry) {
+            cEntry.correctStreak = (cEntry.correctStreak || 0) + 1;
+            cEntry.lastRightAt = now;
+            if (!cEntry.mastered && cEntry.correctStreak >= MASTERY_STREAK) {
+              cEntry.mastered = true;
+              cEntry.masteredAt = now;
+              stat.charMastered += 1;
+            }
+            stat.charUpdated += 1;
+          }
+        });
+      });
+      return stat;
+    }
+
+    function setWeakMastered(kid, word, mastered) {
+      const list = ensureKidWeakWords(kid);
+      const entry = list.find(e => e.word === word);
+      if (!entry) return;
+      entry.mastered = !!mastered;
+      entry.masteredAt = mastered ? new Date().toISOString() : null;
+      entry.correctStreak = mastered ? MASTERY_STREAK : 0;
+      saveState();
+      render();
+    }
+
+    function removeWeakWord(kid, word) {
+      const space = currentSpace();
+      space.weakWords[kid] = (space.weakWords[kid] || []).filter(e => e.word !== word);
+      saveState();
+      render();
+    }
+
+    function setWeakCharMastered(kid, ch, mastered) {
+      const list = ensureKidWeakChars(kid);
+      const entry = list.find(e => e.char === ch);
+      if (!entry) return;
+      entry.mastered = !!mastered;
+      entry.masteredAt = mastered ? new Date().toISOString() : null;
+      entry.correctStreak = mastered ? MASTERY_STREAK : 0;
+      saveState();
+      render();
+    }
+
+    function removeWeakChar(kid, ch) {
+      const space = currentSpace();
+      space.weakChars[kid] = (space.weakChars[kid] || []).filter(e => e.char !== ch);
+      saveState();
+      render();
+    }
+
+    const gradeState = { batchId: "", marks: {} };
+    function gradeBatch() {
+      return currentSpace().batches.find(b => b.id === gradeState.batchId);
+    }
+    function gradeBlanks() {
+      const batch = gradeBatch();
+      return (batch && Array.isArray(batch.blanks)) ? batch.blanks : [];
+    }
+    function setGrade(word, value) {
+      gradeState.marks[word] = value;
+      renderGradeList();
+    }
+    function gradeAll(value) {
+      gradeBlanks().forEach(item => { if (item && item.word) gradeState.marks[item.word] = value; });
+      renderGradeList();
+    }
+    function syncBatchSelect() {
+      const sel = $("batchSelect");
+      if (!sel) return;
+      if (gradeState.batchId && !currentSpace().batches.some(b => b.id === gradeState.batchId)) gradeState.batchId = "";
+      if (!gradeState.batchId) {
+        const candidate = sel.options && sel.options.length ? sel.options[0].value : "";
+        if (candidate) { gradeState.batchId = candidate; gradeState.marks = {}; }
+      }
+      if (gradeState.batchId) sel.value = gradeState.batchId;
+      renderGradeList();
+    }
+    function renderGradeList() {
+      const list = $("gradeList");
+      const meta = $("gradeMeta");
+      if (!list) return;
+      const batch = gradeBatch();
+      const blanks = gradeBlanks();
+      if (!batch) {
+        list.innerHTML = `<div class="empty">请先选择一套已保存的练习。还没保存的话，回到生成练习页"保存"或"下载 Word"（下载会自动入库）。</div>`;
+        if (meta) meta.textContent = "";
+        return;
+      }
+      if (!blanks.length) {
+        list.innerHTML = `<div class="empty">这套练习没有可批改的填空。</div>`;
+        if (meta) meta.textContent = `${batch.title || "练习"}｜${new Date(batch.createdAt).toLocaleString()}`;
+        return;
+      }
+      if (meta) {
+        const right = blanks.filter(b => gradeState.marks[b.word] === "right").length;
+        const wrong = blanks.filter(b => gradeState.marks[b.word] === "wrong").length;
+        const defaultRight = blanks.length - right - wrong;
+        meta.textContent = `${batch.title || "练习"}｜共 ${blanks.length} 空 · 已勾错 ${wrong} · 明确勾对 ${right} · 其余 ${defaultRight} 默认为对`;
+      }
+      list.innerHTML = blanks.map(item => {
+        const word = item.word;
+        const mark = gradeState.marks[word] || "";
+        const cls = mark === "right" ? "grade-item right" : mark === "wrong" ? "grade-item wrong" : "grade-item";
+        const pinyin = item.pinyin ? `<span class="grade-pinyin">${escapeHtml(item.pinyin)}</span>` : "";
+        return `<div class="${cls}"><div class="grade-word"><span>${escapeHtml(word)}</span>${pinyin}</div><div class="grade-actions"><button type="button" data-grade="right" data-word="${escapeHtml(word)}">对</button><button type="button" data-grade="wrong" data-word="${escapeHtml(word)}">错</button></div></div>`;
+      }).join("");
+    }
+
+    function renderWeakWords() {
+      const panel = $("weakWordsPanel");
+      const label = $("weakKidLabel");
+      if (!panel) return;
+      const kid = currentKid();
+      if (label) label.textContent = kid || "未选小朋友";
+      if (!kid) { panel.innerHTML = `<div class="empty">请先在左侧选择小朋友。</div>`; return; }
+      const list = ensureKidWeakWords(kid);
+      if (!list.length) { panel.innerHTML = `<div class="empty">${escapeHtml(kid)} 还没有薄弱词。批改后会自动入库。</div>`; return; }
+      const sorted = list.slice().sort((a, b) => {
+        if (!!a.mastered !== !!b.mastered) return a.mastered ? 1 : -1;
+        const ea = a.errorCount || 0, eb = b.errorCount || 0;
+        if (ea !== eb) return eb - ea;
+        return String(b.lastErrorAt || "").localeCompare(String(a.lastErrorAt || ""));
+      });
+      panel.innerHTML = `<div class="weak-grid">${sorted.map(item => {
+        const cls = item.mastered ? "weak-card mastered" : "weak-card";
+        const meta = [`错 ${item.errorCount || 0} 次`, (item.correctStreak && !item.mastered) ? `连对 ${item.correctStreak}/${MASTERY_STREAK}` : "", item.mastered ? "已掌握" : "", item.firstLessonTitle ? `首次：${escapeHtml(item.firstLessonTitle)}` : "", item.lastErrorAt ? `最近：${new Date(item.lastErrorAt).toLocaleDateString()}` : ""].filter(Boolean).join(" · ");
+        const pinyin = item.pinyin ? `<span class="weak-pinyin">${escapeHtml(item.pinyin)}</span>` : "";
+        return `<div class="${cls}"><div class="weak-head"><span class="weak-word">${escapeHtml(item.word)}</span>${pinyin}</div><div class="weak-meta">${meta}</div><div class="weak-actions">${item.mastered ? `<button data-action="unmaster" data-word="${escapeHtml(item.word)}">移回练习</button>` : `<button data-action="master" data-word="${escapeHtml(item.word)}">标已掌握</button>`}<button data-action="remove" data-word="${escapeHtml(item.word)}">删除</button></div></div>`;
+      }).join("")}</div>`;
+    }
+
+    function renderWeakChars() {
+      const panel = $("weakCharsPanel");
+      const label = $("weakKidLabel2");
+      if (!panel) return;
+      const kid = currentKid();
+      if (label) label.textContent = kid || "未选小朋友";
+      if (!kid) { panel.innerHTML = `<div class="empty">请先在左侧选择小朋友。</div>`; return; }
+      const list = ensureKidWeakChars(kid);
+      if (!list.length) { panel.innerHTML = `<div class="empty">${escapeHtml(kid)} 还没有薄弱字。批改错词时会自动按字拆出来累积。</div>`; return; }
+      const sorted = list.slice().sort((a, b) => {
+        if (!!a.mastered !== !!b.mastered) return a.mastered ? 1 : -1;
+        const ea = a.errorCount || 0, eb = b.errorCount || 0;
+        if (ea !== eb) return eb - ea;
+        return String(b.lastErrorAt || "").localeCompare(String(a.lastErrorAt || ""));
+      });
+      panel.innerHTML = `<div class="weak-grid">${sorted.map(item => {
+        const cls = item.mastered ? "weak-card mastered" : "weak-card";
+        const meta = [`错 ${item.errorCount || 0} 次`, (item.correctStreak && !item.mastered) ? `连对 ${item.correctStreak}/${MASTERY_STREAK}` : "", item.mastered ? "已掌握" : "", item.firstWord ? `初见词：${escapeHtml(item.firstWord)}` : "", item.lastErrorAt ? `最近：${new Date(item.lastErrorAt).toLocaleDateString()}` : ""].filter(Boolean).join(" · ");
+        return `<div class="${cls}"><div class="weak-head"><span class="weak-word">${escapeHtml(item.char)}</span></div><div class="weak-meta">${meta}</div><div class="weak-actions">${item.mastered ? `<button data-action="char-unmaster" data-char="${escapeHtml(item.char)}">移回练习</button>` : `<button data-action="char-master" data-char="${escapeHtml(item.char)}">标已掌握</button>`}<button data-action="char-remove" data-char="${escapeHtml(item.char)}">删除</button></div></div>`;
+      }).join("")}</div>`;
     }
 
     function escapeHtml(value) {
@@ -1100,7 +1375,20 @@
       $("batchSelect").innerHTML = batches.length
         ? batches.slice().reverse().map(item => `<option value="${item.id}">${escapeHtml(item.title)}｜${escapeHtml(item.type)}｜${new Date(item.createdAt).toLocaleString()}</option>`).join("")
         : `<option value="">暂无练习记录，请先生成并保存一套练习</option>`;
+
+      // sync grade panel + weak panels
+      syncBatchSelect();
+      renderWeakWords();
+      renderWeakChars();
+
+      // lesson-switch sync: refresh material textareas exactly once when lesson changes
+      if (lastSyncedLessonId !== lessonId) {
+        lastSyncedLessonId = lessonId;
+        syncLessonInputs();
+      }
     }
+
+    let lastSyncedLessonId = null;
 
     function renderRecordList(target, items, emptyText) {
       $(target).innerHTML = items.length ? items.map(item => `
@@ -1298,7 +1586,9 @@
         studentHtml: `<h2>\u300a${escapeHtml($("lessonTitle").value || "\u8bfe\u6587")}\u300b\u586b\u7a7a\u7ec3\u4e60</h2><p>${html.replaceAll("\n", "</p><p>")}</p>`,
         answerHtml: `<h3>\u7b54\u6848</h3><p>${answers.map(escapeHtml).join("\u3001")}</p>`,
         studentText: htmlToText(html),
-        answers
+        answers,
+        blanks: blanks.map(item => ({ word: item.word, pinyin: item.pinyin || pinyinMap[item.word] || "" })),
+        showPinyin
       };
     }
 
@@ -1313,12 +1603,18 @@
       const showPinyin = selected("#pinyinPicker", "pinyin") === "on";
       const sourceText = $("lessonText").value || demoLesson;
       const lessonTitle = $("lessonTitle").value || "";
+      const kid = currentKid();
+      const wordPriorities = kid ? activeWeakWords(kid).map(item => item.word).filter(Boolean) : [];
+      const charList = kid ? activeWeakChars(kid).map(item => item.char) : [];
+      const charDerivedWords = priorityWordsFromText(sourceText, charList);
+      const priorityWords = Array.from(new Set([...wordPriorities, ...charDerivedWords]));
+      const priorityChars = charList;
 
       try {
         const response = await fetch("/api/practice", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lessonTitle, lessonText: sourceText, level, showPinyin })
+          body: JSON.stringify({ lessonTitle, lessonText: sourceText, level, showPinyin, priorityWords, priorityChars })
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "\u7ec3\u4e60\u751f\u6210\u5931\u8d25");
@@ -1437,19 +1733,22 @@
 
     async function copyPractice() {
       if (!currentPractice) await generatePractice();
+      await saveBatch({ silent: true });
       await navigator.clipboard.writeText(currentPractice.studentText);
       showToast("学生版已复制");
     }
 
     async function downloadWord() {
       if (!currentPractice) await generatePractice();
+      // 下载即视为家长要打印这套练习了，自动入留档，避免回头反馈时找不到
+      await saveBatch({ silent: true });
       const title = $("lessonTitle").value || "课文练习";
-      // Word 里用 <u>+全角空格作为横线，外面 cloze 已经包了 white-space:nowrap，行末横线会整体换到下一行
-      const blankFor = (n) => `<u>${"　".repeat(Number(n) * 2)}</u>`;
-      const toWordHtml = (html) => html.replace(
-        /<span class="blank w(\d)"><\/span>/g,
-        (_, n) => blankFor(n)
-      );
+      // 横线用 <u>+不间断空格，避免 Word 在行末把横线断开
+      // 拼音括号前也用不间断空格粘住横线，避免行末把横线和拼音拆到两行
+      const blankFor = (n) => `<u>${"\u00a0".repeat(Number(n) * 4)}</u>`;
+      const toWordHtml = (html) => html
+        .replace(/<span class="blank w(\d)"><\/span>/g, (_, n) => blankFor(n))
+        .replace(/<\/u>（/g, "</u>\u00a0（");
       const studentHtml = toWordHtml(currentPractice.studentHtml);
       const answerHtml = toWordHtml(currentPractice.answerHtml);
       const content = `
@@ -1477,15 +1776,21 @@
       showToast("Word 已下载");
     }
 
-    async function saveBatch() {
+    async function saveBatch(options) {
+      const silent = options && options.silent;
       if (!currentPractice) await generatePractice();
+      if (currentPractice && currentPractice.batchId) {
+        if (!silent) showToast("练习已保存");
+        return currentPractice.batchId;
+      }
       const kid = currentKid();
-      if (!kid) return showToast("请先添加小朋友");
+      if (!kid) { if (!silent) showToast("请先添加小朋友"); return null; }
       const lesson = currentLesson();
-      if (!lesson) return showToast("请先创建或选择课文");
+      if (!lesson) { if (!silent) showToast("请先创建或选择课文"); return null; }
       const space = currentSpace();
+      const batchId = crypto.randomUUID();
       const batch = {
-        id: crypto.randomUUID(),
+        id: batchId,
         kid,
         lessonId: lesson.id,
         lessonTitle: lesson.title,
@@ -1497,12 +1802,17 @@
         workbookText: $("workbookText").value,
         studentHtml: currentPractice.studentHtml,
         answerHtml: currentPractice.answerHtml,
+        answers: currentPractice.answers || [],
+        blanks: currentPractice.blanks || [],
+        showPinyin: currentPractice.showPinyin !== false,
         createdAt: new Date().toISOString()
       };
       space.batches.push(batch);
+      currentPractice.batchId = batchId;
       saveState();
       render();
-      showToast("已保存到留档");
+      if (!silent) showToast("已保存到留档");
+      return batchId;
     }
 
     function saveMaterial() {
@@ -1620,26 +1930,33 @@
     function saveFeedback() {
       const kid = currentKid();
       if (!kid) return showToast("请先添加小朋友");
-      const lesson = currentLesson();
-      if (!lesson) return showToast("请先创建或选择课文");
-      const text = $("feedbackText").value.trim();
-      if (!text) return showToast("请填写作答结果");
-      const batchId = $("batchSelect").value;
-      const batch = currentSpace().batches.find(item => item.id === batchId);
+      if (!gradeState.batchId) return showToast("请先选择一套练习");
+      const batch = gradeBatch();
+      if (!batch) return showToast("找不到所选练习");
+      const blanks = gradeBlanks();
+      if (!blanks.length) return showToast("这套练习没有可批改的填空");
+      const marks = gradeState.marks || {};
+      // 未勾选 = 视为对；仅"错"会写入薄弱库，整体批改默认通过
+      const stat = recordWeakWords(kid, batch, marks);
+      const wrongs = blanks.filter(b => marks[b.word] === "wrong").map(b => b.word);
+      const explicitRights = blanks.filter(b => marks[b.word] === "right").map(b => b.word);
+      const text = `批改 ${blanks.length} 空｜错 ${wrongs.length}：${wrongs.join("、") || "无"}｜其余视为对（含明确勾对 ${explicitRights.length} 个）`;
       currentSpace().feedback.push({
         id: crypto.randomUUID(),
-        batchId,
+        batchId: batch.id,
         kid,
-        lessonId: lesson.id,
-        lessonTitle: lesson.title,
-        title: batch ? batch.title : "作答反馈",
+        lessonId: batch.lessonId || (currentLesson() && currentLesson().id) || "",
+        lessonTitle: batch.lessonTitle || (currentLesson() && currentLesson().title) || "",
+        title: batch.title || "作答反馈",
         text,
+        marks: { ...marks },
+        stat,
         createdAt: new Date().toISOString()
       });
-      $("feedbackText").value = "";
+      gradeState.marks = {};
       saveState();
       render();
-      showToast("反馈已保存");
+      showToast(`已保存｜薄弱词新增 ${stat.wordAdded}，掌握 ${stat.wordMastered}；薄弱字新增 ${stat.charAdded}，掌握 ${stat.charMastered}`);
     }
 
     function addKid() {
@@ -1755,9 +2072,9 @@
       button.addEventListener("click", () => switchMaterialType(button));
     });
 
-    $("lessonText").value = demoLesson;
+    $("lessonText").value = "";
     $("materialText").value = "";
-    $("workbookText").value = demoWorkbook;
+    $("workbookText").value = "";
     $("useSpace").addEventListener("click", useSpace);
     $("newSpace").addEventListener("click", newSpace);
     $("addKid").addEventListener("click", addKid);
@@ -1767,8 +2084,45 @@
       if (lesson) {
         $("lessonTitle").value = lesson.title;
       }
-      syncLessonInputs();
       render();
+    });
+    $("kidSelect").addEventListener("change", () => {
+      gradeState.marks = {};
+      render();
+    });
+    $("batchSelect").addEventListener("change", () => {
+      gradeState.batchId = $("batchSelect").value;
+      gradeState.marks = {};
+      renderGradeList();
+    });
+    $("gradeList").addEventListener("click", (event) => {
+      const btn = event.target.closest("button[data-grade]");
+      if (!btn) return;
+      setGrade(btn.dataset.word, btn.dataset.grade);
+    });
+    $("gradeAllRight").addEventListener("click", () => gradeAll("right"));
+    $("gradeAllWrong").addEventListener("click", () => gradeAll("wrong"));
+    $("weakWordsPanel").addEventListener("click", (event) => {
+      const btn = event.target.closest("button[data-action]");
+      if (!btn) return;
+      const kid = currentKid();
+      if (!kid) return;
+      const word = btn.dataset.word;
+      const action = btn.dataset.action;
+      if (action === "master") setWeakMastered(kid, word, true);
+      else if (action === "unmaster") setWeakMastered(kid, word, false);
+      else if (action === "remove") removeWeakWord(kid, word);
+    });
+    $("weakCharsPanel").addEventListener("click", (event) => {
+      const btn = event.target.closest("button[data-action]");
+      if (!btn) return;
+      const kid = currentKid();
+      if (!kid) return;
+      const ch = btn.dataset.char;
+      const action = btn.dataset.action;
+      if (action === "char-master") setWeakCharMastered(kid, ch, true);
+      else if (action === "char-unmaster") setWeakCharMastered(kid, ch, false);
+      else if (action === "char-remove") removeWeakChar(kid, ch);
     });
     $("saveMaterial").addEventListener("click", saveMaterial);
     $("runOcr").addEventListener("click", runOcr);
@@ -1781,11 +2135,9 @@
     $("saveFeedback").addEventListener("click", saveFeedback);
     $("exportJson").addEventListener("click", exportJson);
     bindImageInput("materialImages", "materialImageList", "materialText", "素材");
-    bindImageInput("answerImages", "answerImageList", "feedbackText", "作答");
 
     render();
     updateModeControls();
-    generatePractice();
   </script>
 </body>
 </html>
