@@ -497,6 +497,18 @@
       font-size: 17px;
     }
 
+    .preview p {
+      margin: 0 0 14px;
+    }
+
+    .preview h2 {
+      margin: 0 0 14px;
+    }
+
+    .preview h3 {
+      margin: 18px 0 10px;
+    }
+
     .blank {
       display: inline-block;
       border-bottom: 1.8px solid #111827;
@@ -1871,7 +1883,6 @@
         .replace(/<span class="blank w(\d)"><\/span>/g, (_, n) => blankFor(n))
         .replace(/<\/u>（/g, "</u>\u00a0（");
       const studentHtml = toWordHtml(currentPractice.studentHtml);
-      const answerHtml = toWordHtml(currentPractice.answerHtml);
       const content = `
         <!doctype html>
         <html><head><meta charset="utf-8">
@@ -1879,13 +1890,12 @@
           body { font-family: "Microsoft YaHei", Arial, sans-serif; line-height: 1.5; font-size: 13pt; margin: 0; }
           h2 { text-align: center; margin: 6pt 0 10pt; font-size: 16pt; }
           h3 { margin: 8pt 0 4pt; font-size: 14pt; }
-          p { margin: 4pt 0; }
+          p { margin: 10pt 0; line-height: 1.8; }
           u { text-underline-position: under; }
           .cloze { white-space: nowrap; }
           .answer { margin-top: 12pt; }
         </style></head><body>
           ${studentHtml}
-          <div class="answer">${answerHtml}</div>
         </body></html>`;
       const blob = new Blob(["\ufeff", content], { type: "application/msword" });
       const url = URL.createObjectURL(blob);
