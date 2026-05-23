@@ -1,9 +1,54 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const root = __dirname;
 const port = Number(process.env.PORT || 8787);
+
+// 简单访问密码网关：设置 ACCESS_PASSWORD 后，所有页面/API 需要先通过登录页输入密码
+// 不设置时（本地开发）所有请求直通
+const ACCESS_PASSWORD = process.env.ACCESS_PASSWORD || "";
+const COOKIE_NAME = "kewen_auth";
+function authToken() {
+  if (!ACCESS_PASSWORD) return "";
+  return crypto.createHash("sha256").update("kewen|" + ACCESS_PASSWORD).digest("hex").slice(0, 32);
+}
+function isAuthed(req) {
+  if (!ACCESS_PASSWORD) return true;
+  const cookie = req.headers.cookie || "";
+  const expected = authToken();
+  return cookie.split(/;\s*/).some(c => c === COOKIE_NAME + "=" + expected);
+}
+function loginPage(error) {
+  const msg = error ? '<p style="color:#c0392b;margin:0 0 12px">密码错误，请重试</p>' : "";
+  return '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>课文小老师</title>'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<style>body{font-family:"Microsoft YaHei",Arial,sans-serif;background:#f5f5f7;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}'
+    + '.card{background:#fff;padding:32px 28px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.08);width:300px}'
+    + 'h2{margin:0 0 16px;font-size:18px}input{width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:15px;box-sizing:border-box;margin-bottom:12px}'
+    + 'button{width:100%;padding:10px;background:#2c7be5;color:#fff;border:0;border-radius:6px;font-size:15px;cursor:pointer}</style>'
+    + '</head><body><form class="card" method="POST" action="/__login"><h2>课文小老师</h2>' + msg
+    + '<input name="password" type="password" placeholder="访问密码" autofocus required><button type="submit">进入</button></form></body></html>';
+}
+async function handleLogin(req, res) {
+  let body = "";
+  req.on("data", c => { body += c; if (body.length > 4096) req.destroy(); });
+  req.on("end", () => {
+    const params = new URLSearchParams(body);
+    const pwd = params.get("password") || "";
+    if (pwd === ACCESS_PASSWORD) {
+      res.writeHead(302, {
+        "Set-Cookie": COOKIE_NAME + "=" + authToken() + "; HttpOnly; Path=/; Max-Age=2592000; SameSite=Lax",
+        "Location": "/"
+      });
+      res.end();
+    } else {
+      res.writeHead(401, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(loginPage(true));
+    }
+  });
+}
 
 let baiduTokenCache = {
   token: "",
@@ -408,6 +453,21 @@ async function handleOcr(req, res) {
 const server = http.createServer((req, res) => {
   if (req.method === "OPTIONS") {
     send(res, 204, "");
+    return;
+  }
+  // 登录路由
+  if (req.method === "POST" && req.url === "/__login") {
+    handleLogin(req, res);
+    return;
+  }
+  // 访问网关：未登录访问页面给登录页，访问 API 返回 401
+  if (!isAuthed(req)) {
+    if (req.url && req.url.startsWith("/api/")) {
+      send(res, 401, JSON.stringify({ error: "未登录或会话已过期，请刷新页面后重新输入访问密码。" }));
+      return;
+    }
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(loginPage(false));
     return;
   }
   if (req.method === "POST" && req.url === "/api/ocr") {
